@@ -1,7 +1,7 @@
 /**
 * Name: NewModel
 * Based on the internal empty template. 
-* Author: jessi
+* Author: jessica
 */
 
 
