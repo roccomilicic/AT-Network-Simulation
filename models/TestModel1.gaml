@@ -2,7 +2,7 @@
 * Name: NewModel1
 * Based on the internal empty template. 
 * Author: jessi
-* Tags: test
+* Tags: test Jonathan Branch
 */
 
 /* Insert your model definition here */
