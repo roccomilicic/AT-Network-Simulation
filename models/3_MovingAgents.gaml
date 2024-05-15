@@ -20,6 +20,19 @@ global {
         file shape_file_routes <- file("../includes/BusRoutes/BusService.shp");
         file shape_file_bounds <- file("../includes/AucklandBounds/Auckland_Bounds.shp");
         file shape_file_stops <- file("../includes/BusStops/BusService.shp");
+        file csv_stop_times <- csv_file("../includes/stop_times_trimmed.csv", ",");
+        matrix stop_times_matrix <- matrix(csv_stop_times);
+        
+		list<string> stop_times_trip_id <- stop_times_matrix column_at(0);
+		list<string> stop_times_arrival_time <- stop_times_matrix column_at(1);
+		list<string> stop_times_departure_time <- stop_times_matrix column_at(2);
+		list<string> stop_times_stop_id <- stop_times_matrix column_at(3);
+		list<string> stop_times_stop_sequence <- stop_times_matrix column_at(4);
+		list<string> stop_times_stop_headsign <- stop_times_matrix column_at(5);
+		list<string> stop_times_pickup_type <- stop_times_matrix column_at(6);
+		list<string> stop_times_drop_off_type <- stop_times_matrix column_at(7);
+		list<string> stop_times_shape_dist_traveled <- stop_times_matrix column_at(8);
+		list<string> stop_times_timepoint <- stop_times_matrix column_at(9);
         
         geometry shape <- envelope(shape_file_bounds);
         float step <- 10 #mn;
@@ -28,6 +41,12 @@ global {
         graph the_graph;
     
         init {
+        	
+        	write "\n"+stop_times_trip_id;
+    		write "\n"+stop_times_stop_id;
+    		write "\n"+stop_times_stop_sequence;
+    		write "\n"+stop_times_stop_headsign;
+        	
             create routes from: shape_file_routes ;
             create stops from: shape_file_stops ;
             the_graph <- as_edge_graph(routes);
