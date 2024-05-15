@@ -2,7 +2,7 @@
 * Name: NewModel1
 * Based on the internal empty template. 
 * Author: jessi
-* Tags: test
+* Tags: 
 */
 
 /* Insert your model definition here */
@@ -23,6 +23,8 @@ global {
         
         geometry shape <- envelope(shape_file_bounds);
         float step <- 10 #mn;
+        
+        int nb_people<- 100;
     
         init {
             create routes from: shape_file_routes ;
