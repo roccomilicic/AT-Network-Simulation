@@ -1,15 +1,6 @@
 /**
-* Name: NewModel1
-* Based on the internal empty template. 
-* Author: jessi
-* Tags: 
-*/
-
-/* Insert your model definition here */
-
-/**
 * Name: Loading of GIS data (buildings and roads)
-* Author: Jessica
+* Author: Rocco
 * Description: first part of the tutorial: Road Traffic
 * Tags: gis
 */
@@ -23,11 +14,15 @@ global {
         file csv_stop_times <- csv_file("../includes/stop_times_trimmed.csv", ",");
         matrix stop_times_matrix <- matrix(csv_stop_times);
         
+        //list<string> stop_times_trip_id;
+    	//list<string> stop_times_stop_id;
+    	//list<int> stop_times_stop_sequence;
+        
 		list<string> stop_times_trip_id <- stop_times_matrix column_at(0);
 		list<string> stop_times_arrival_time <- stop_times_matrix column_at(1);
 		list<string> stop_times_departure_time <- stop_times_matrix column_at(2);
 		list<string> stop_times_stop_id <- stop_times_matrix column_at(3);
-		list<string> stop_times_stop_sequence <- stop_times_matrix column_at(4);
+		list<int> stop_times_stop_sequence <- stop_times_matrix column_at(4);
 		list<string> stop_times_stop_headsign <- stop_times_matrix column_at(5);
 		list<string> stop_times_pickup_type <- stop_times_matrix column_at(6);
 		list<string> stop_times_drop_off_type <- stop_times_matrix column_at(7);
@@ -38,18 +33,22 @@ global {
         float step <- 10 #mn;
         
         int nb_people<- 100;
+        int buses<- 100;
         graph the_graph;
     
         init {
         	
-        	write "\n"+stop_times_trip_id;
+        	/*write "\n"+stop_times_trip_id;
     		write "\n"+stop_times_stop_id;
     		write "\n"+stop_times_stop_sequence;
-    		write "\n"+stop_times_stop_headsign;
+    		write "\n"+stop_times_stop_headsign;*/
+    		
+    		//write
         	
             create routes from: shape_file_routes ;
             create stops from: shape_file_stops ;
             the_graph <- as_edge_graph(routes);
+            
             // Create people agents similar to second model
         	create people number:nb_people {
             	location <- any_location_in(one_of(stops));
@@ -59,7 +58,7 @@ global {
             	working_place <- one_of(stops);
             	living_place <- one_of(stops);
             	objective <- "resting";
-        	}
+        	}	
         }
 }
 
@@ -79,6 +78,15 @@ species stops {
 	aspect base {
 		draw shape color: color ;
 	}
+}
+
+species bus {
+    string trip_id;
+    string stop_id;
+    int stop_sequence;
+    int current_stop_index;
+
+    aspect base {}
 }
 
 species people skills:[moving] {
