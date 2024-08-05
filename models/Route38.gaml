@@ -44,11 +44,11 @@ global {
 				point next_stop_location <- point(to_GAMA_CRS(next_stop_coordinate));
 
 				// Link the 2 stops together
-				next_stop_link <- link(location, next_stop_location);
+				next_stop_link <- line(location, next_stop_location);
 			}
 
 		}
-
+		the_graph <- as_edge_graph(road);
 		loop row from: 1 to: 1 {
 			create bus {
 				float starting_lon <- data[5, row];
@@ -59,7 +59,7 @@ global {
 
 		}
 
-		the_graph <- as_edge_graph(road);
+		
 	}
 
 }
@@ -93,7 +93,7 @@ species road {
 
 	aspect base {
 		draw shape color: #red;
-		draw next_stop_link color: #blue;
+		draw next_stop_link color: #pink;
 	}
 
 }
@@ -101,16 +101,26 @@ species road {
 species bus skills: [moving] {
 
 	point coordinate;
+	path path_following <- list(the_graph) as_path the_graph;
+	
+
+	reflex myfollow{
+		do follow path: path_following;
+	}
 
 	aspect base {
 		draw rectangle(0.001, 0.004) color: #blue border: #black; // Draw the bus
+		loop seg over: path_following.edges {
+	  		draw seg color: color;
+	 	 }
 	}
 
 }
 
 experiment main type: gui {
+	float minimum_cycle_duration <- 2;
 	output {
-		display myView type: 3d {
+		display myView{
 			species road aspect: base;
 			species stop aspect: base;
 			species bus aspect: base;
