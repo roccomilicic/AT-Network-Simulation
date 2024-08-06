@@ -77,10 +77,11 @@ species stop {
 	init {
 		coordinate <- point({lon, lat});
 		location <- point(to_GAMA_CRS(coordinate));
+		write stop_name;
 	}
 
 	aspect base {
-		draw circle(0.0004) color: #yellow border: #black;
+		draw circle(0.0004) color: #green border: #black;
 	}
 
 }
@@ -95,7 +96,7 @@ species road {
 	geometry next_stop_link;
 
 	aspect base {
-		draw shape color: #red;
+	//	draw shape color: #red;
 		draw next_stop_link color: #pink;
 	}
 
@@ -112,7 +113,7 @@ species bus skills: [moving] {
 	}
 
 	aspect base {
-		draw rectangle(0.001, 0.004) color: #blue border: #black; // Draw the bus
+		draw rectangle(0.001, 0.004) color: #yellow border: #black; // Draw the bus
 		loop seg over: path_following.edges {
 	  		draw seg color: color;
 	 	 }
