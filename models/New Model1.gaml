@@ -9,21 +9,23 @@ model Route_38
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
 	file route_38_csv <- csv_file("../includes/stops.csv", ",");
+	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
+	
 
 	init {
 	// Create stops from the CSV file data
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
-
+        
 		// Create roads of the bus route from the CSV file data
-		matrix data <- matrix(route_38_csv);
+		matrix data <- matrix(route_38_road_csv);
 		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
 			write "\nProcessing row: " + row;
-			float lon1 <- data[5, row]; // Longitude for the current row
-			float lat1 <- data[4, row]; // Latitude for the current row
-			float lon2 <- data[5, row + 1]; // Longitude for the next row
-			float lat2 <- data[4, row + 1]; // Latitude for the next row
+			float lon1 <- data[2, row]; // Longitude for the current row
+			float lat1 <- data[1, row]; // Latitude for the current row
+			float lon2 <- data[2, row + 1]; // Longitude for the next row
+			float lat2 <- data[1, row + 1]; // Latitude for the next row
 
 			// Create road species based on collect data from CSV
 			create road {
@@ -52,8 +54,8 @@ global {
 		the_graph <- as_edge_graph(road);
 		loop row from: 1 to: 1 {
 			create bus {
-				float starting_lon <- data[5, row];
-				float starting_lat <- data[4, row]; // Latitude for the current row
+				float starting_lon <- data[2, row];
+				float starting_lat <- data[1, row]; // Latitude for the current row
 				coordinate <- point({starting_lon, starting_lat});
 				location <- point(to_GAMA_CRS(coordinate));
 			}
@@ -119,7 +121,7 @@ species bus skills: [moving] {
 }
 
 experiment main type: gui {
-	float minimum_cycle_duration <- 2;
+	float minimum_cycle_duration <- 0.01;
 	output {
 		display myView{
 			species road aspect: base;
