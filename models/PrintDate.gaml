@@ -1,35 +1,42 @@
 /**
-* Name: PrintDate
+* Name: PrintTime
 * Based on the internal empty template. 
 * Author: rocco
 * Tags: 
 */
+model PrintTime
 
-
-model PrintDate
 global {
-	
-	//definition of the date of begining of the simulation - defining this date will allows to change the normal date management of the simulation by a more realistic one (using calendar) 
-	date starting_date <- date([2024,8,12,12,0,0]);
-	
-	//be careful, when real dates are used, modelers should not use the #month and #year values that are not consistent with them
-	//#ms, #s, #mn, #h, #day represent exact durations that can be used in combination with the date values
-	
-	
-	//float step <- 2#year; ssss
-		
+
+	date starting_date <- date([2024, 8, 12, 12, 0, 0]);
+	int zoom <- 4 min:2 max:10;
+
 	init {
 		write "D&T: " + starting_date;
-		
+		create clock {
+			current_date <- starting_date;
+		}
 
 	}
-	
+
 	species clock {
 		string current_date;
-		
-		
+
+		aspect default {
+			draw string(starting_date) size:zoom/2 font:"times" color:#black at:{10, 10, 10};
+		}
+
 	}
 
 }
 
-experiment main type: gui;
+experiment main type: gui {
+	output {
+		display myView type: 3d{
+			species clock aspect: default;
+		}
+
+	}
+
+}
+
