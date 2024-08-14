@@ -14,23 +14,15 @@ global {
 	file single_trip_stop_times_route38_csv <- csv_file("../includes/stop_times_single_Route38.csv");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
-	
-	// Variables for the clock
+
+	// Variables for the clock species
 	date starting_date <- date([2024, 8, 12, 0, 0, 0]);
-	int zoom <- 4 min:2 max:10;
-	float step <- 1#second; 
->>>>>>> Stashed changes
-=======
-	
->>>>>>> main
+	float step <- 1 #second;
 
 	init {
 	// Create stops from the CSV file data
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
-        
+
 		// Create roads of the bus route from the CSV file data
 		matrix data <- matrix(route_38_road_csv);
 		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
@@ -62,29 +54,9 @@ global {
 				next_stop_link <- line(location, next_stop_location);
 			}
 
-			// Create the clock species
-			create clock {
-				current_date <- starting_date;
-				
-			}
-
 		}
 
 		the_graph <- as_edge_graph(road);
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-		loop row from: 1 to: 1 {
-=======
-			matrix trip_data <- matrix(single_trip_route38_csv);
-			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
->>>>>>> main
-			create bus {
-				float starting_lon <- data[2, 1];
-				float starting_lat <- data[1, 1]; // Latitude for the current row
-				coordinate <- point({starting_lon, starting_lat});
-				location <- point(to_GAMA_CRS(coordinate));
-<<<<<<< HEAD
-=======
 		matrix trip_data <- matrix(single_trip_route38_csv);
 		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
 		create bus {
@@ -96,24 +68,14 @@ global {
 			loop x from: 0 to: stop_times_data.rows - 1 {
 				add stop_times_data[2, x] to: stop_departure_times;
 				add stop_times_data[1, x] to: stop_arrival_times;
->>>>>>> Stashed changes
-=======
-				trip_id <- trip_data[2,0];
-				
-				loop x from: 0 to: stop_times_data.rows - 1 {
-					add stop_times_data[2, x] to: stop_departure_times;
-					add stop_times_data[1, x] to: stop_arrival_times;
-				}
-				
->>>>>>> main
 			}
 
+		}
 
+		create clock {
+			current_date <- starting_date;
+		}
 
-<<<<<<< Updated upstream
-		
-=======
->>>>>>> Stashed changes
 	}
 
 }
@@ -155,23 +117,11 @@ species road {
 species bus skills: [moving] {
 	point coordinate;
 	path path_following <- list(the_graph) as_path the_graph;
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-	
-
-=======
-	string trip_id;
-	list<string> stop_departure_times;
-	list<string> stop_arrival_times;
->>>>>>> main
-	reflex myfollow{
-=======
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
 
 	reflex myfollow {
->>>>>>> Stashed changes
 		do follow path: path_following;
 	}
 
@@ -191,30 +141,43 @@ species clock {
 
 	aspect default {
 		switch (current_date.day_of_week) {
-			match 1 {day <- "Monday";}
-			match 2 {day <- "Tuesday";}
-			match 3 {day <- "Wednesday";}
-			match 4 {day <- "Thursday";}
-			match 5 {day <- "Friday";}
-			match 6 {day <- "Saturday";}
-			match 7 {day <- "Sunday";}
+			match 1 {
+				day <- "Monday";
+			}
+
+			match 2 {
+				day <- "Tuesday";
+			}
+
+			match 3 {
+				day <- "Wednesday";
+			}
+
+			match 4 {
+				day <- "Thursday";
+			}
+
+			match 5 {
+				day <- "Friday";
+			}
+
+			match 6 {
+				day <- "Saturday";
+			}
+
+			match 7 {
+				day <- "Sunday";
+			}
+
 		}
-		
-		draw string(day + string(current_date, " HH:mm:ss")) size: zoom / 1.5 font: "times" color: #black at: {0.001, -0.005, 0.001};
+
+		draw string(day + string(current_date, " HH:mm:ss")) font: "times" color: #black at: {0, -0.005, 0};
 	}
 
 }
 
 experiment main type: gui {
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-	float minimum_cycle_duration <- 2;
-=======
-	float minimum_cycle_duration <- 0.1;
->>>>>>> Stashed changes
-=======
-	float minimum_cycle_duration <- 0.01;
->>>>>>> main
+	float minimum_cycle_duration <- 0.05;
 	output {
 		display myView type: 3d {
 			species road aspect: base;
