@@ -9,8 +9,12 @@ model Route_38
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
 	file route_38_csv <- csv_file("../includes/stops.csv", ",");
+	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
+	file single_trip_route38_csv <- csv_file("../includes/single_trip_Route38.csv");
+	file single_trip_stop_times_route38_csv <- csv_file("../includes/stop_times_single_Route38.csv");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 =======
 	
@@ -19,19 +23,22 @@ global {
 	int zoom <- 4 min:2 max:10;
 	float step <- 1#second; 
 >>>>>>> Stashed changes
+=======
+	
+>>>>>>> main
 
 	init {
 	// Create stops from the CSV file data
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
-
+        
 		// Create roads of the bus route from the CSV file data
-		matrix data <- matrix(route_38_csv);
+		matrix data <- matrix(route_38_road_csv);
 		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
 			write "\nProcessing row: " + row;
-			float lon1 <- data[5, row]; // Longitude for the current row
-			float lat1 <- data[4, row]; // Latitude for the current row
-			float lon2 <- data[5, row + 1]; // Longitude for the next row
-			float lat2 <- data[4, row + 1]; // Latitude for the next row
+			float lon1 <- data[2, row]; // Longitude for the current row
+			float lat1 <- data[1, row]; // Latitude for the current row
+			float lon2 <- data[2, row + 1]; // Longitude for the next row
+			float lat2 <- data[1, row + 1]; // Latitude for the next row
 
 			// Create road species based on collect data from CSV
 			create road {
@@ -64,13 +71,19 @@ global {
 		}
 
 		the_graph <- as_edge_graph(road);
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 		loop row from: 1 to: 1 {
+=======
+			matrix trip_data <- matrix(single_trip_route38_csv);
+			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
+>>>>>>> main
 			create bus {
-				float starting_lon <- data[5, row];
-				float starting_lat <- data[4, row]; // Latitude for the current row
+				float starting_lon <- data[2, 1];
+				float starting_lat <- data[1, 1]; // Latitude for the current row
 				coordinate <- point({starting_lon, starting_lat});
 				location <- point(to_GAMA_CRS(coordinate));
+<<<<<<< HEAD
 =======
 		matrix trip_data <- matrix(single_trip_route38_csv);
 		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
@@ -84,9 +97,18 @@ global {
 				add stop_times_data[2, x] to: stop_departure_times;
 				add stop_times_data[1, x] to: stop_arrival_times;
 >>>>>>> Stashed changes
+=======
+				trip_id <- trip_data[2,0];
+				
+				loop x from: 0 to: stop_times_data.rows - 1 {
+					add stop_times_data[2, x] to: stop_departure_times;
+					add stop_times_data[1, x] to: stop_arrival_times;
+				}
+				
+>>>>>>> main
 			}
 
-		}
+
 
 <<<<<<< Updated upstream
 		
@@ -133,9 +155,15 @@ species road {
 species bus skills: [moving] {
 	point coordinate;
 	path path_following <- list(the_graph) as_path the_graph;
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 	
 
+=======
+	string trip_id;
+	list<string> stop_departure_times;
+	list<string> stop_arrival_times;
+>>>>>>> main
 	reflex myfollow{
 =======
 	string trip_id;
@@ -178,11 +206,15 @@ species clock {
 }
 
 experiment main type: gui {
+<<<<<<< HEAD
 <<<<<<< Updated upstream
 	float minimum_cycle_duration <- 2;
 =======
 	float minimum_cycle_duration <- 0.1;
 >>>>>>> Stashed changes
+=======
+	float minimum_cycle_duration <- 0.01;
+>>>>>>> main
 	output {
 		display myView type: 3d {
 			species road aspect: base;
