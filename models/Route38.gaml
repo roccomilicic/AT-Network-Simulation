@@ -16,7 +16,7 @@ global {
 	geometry shape <- envelope(route_38_bounds);
 
 	// Variables for the clock species
-	date starting_date <- date([2024, 8, 12, 0, 0, 0]);
+	date starting_date <- date([2024, 8, 12, 4, 30, 0]);
 	float step <- 1 #second;
 
 	init {
@@ -122,7 +122,20 @@ species bus skills: [moving] {
 	list<string> stop_arrival_times;
 
 	reflex myfollow {
-		do follow path: path_following;
+		loop x from: 0 to: stop_arrival_times - 1 {
+			if stop_departure_times at 0 = "04:45:00" {
+				write "first stop found!";
+				
+				write "CURRENT DATE AND TIME: " + string(current_date, " HH:mm:ss");
+				if string(current_date, " HH:mm:ss") = " 04:45:00" {
+					write "it is time to arrive at the 1st stop!";
+					do follow path: path_following;
+				}
+
+			}
+
+		}
+
 	}
 
 	aspect base {
@@ -177,7 +190,7 @@ species clock {
 }
 
 experiment main type: gui {
-	float minimum_cycle_duration <- 0.05;
+	float minimum_cycle_duration <- 0.0000001;
 	output {
 		display myView type: 3d {
 			species road aspect: base;
