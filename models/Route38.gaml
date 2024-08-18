@@ -1,9 +1,3 @@
-/**
-* Name: Route_38
-* Route 38 example 
-* Author: jonat
-* Tags: 
-*/
 model Route_38
 
 global {
@@ -14,12 +8,15 @@ global {
 	file single_trip_stop_times_route38_csv <- csv_file("../includes/stop_times_single_Route38.csv");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
-	
+
+	// Variables for the clock species
+	date starting_date <- date([2024, 8, 12, 4, 30, 0]);
+	float step <- 1 #second;
 
 	init {
-	// Create stops from the CSV file data
+		// Create stops from the CSV file data
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
-        
+
 		// Create roads of the bus route from the CSV file data
 		matrix data <- matrix(route_38_road_csv);
 		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
@@ -29,9 +26,9 @@ global {
 			float lon2 <- data[2, row + 1]; // Longitude for the next row
 			float lat2 <- data[1, row + 1]; // Latitude for the next row
 
-			// Create road species based on collect data from CSV
+			// Create road species based on collected data from CSV
 			create road {
-			// Lon and lat values for current stop 
+				// Lon and lat values for current stop 
 				lon <- lon1;
 				lat <- lat1;
 
@@ -39,42 +36,38 @@ global {
 				lon_next <- lon2;
 				lat_next <- lat2;
 
-				// Location for the current stop to put the begginning of the road on the map
+				// Location for the current stop to put the beginning of the road on the map
 				coordinate <- point({lon, lat});
 				location <- point(to_GAMA_CRS(coordinate));
 
-				// Location for the next stop to put the begginning of the road on the map
+				// Location for the next stop to put the beginning of the road on the map
 				point next_stop_coordinate <- point({lon_next, lat_next});
 				point next_stop_location <- point(to_GAMA_CRS(next_stop_coordinate));
 
 				// Link the 2 stops together
-				next_stop_link <- line(location, next_stop_location);	
+				next_stop_link <- line(location, next_stop_location);
 			}
-			
-
 		}
+
 		the_graph <- as_edge_graph(road);
-			matrix trip_data <- matrix(single_trip_route38_csv);
-			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
-			create bus {
-				float starting_lon <- data[2, 1];
-				float starting_lat <- data[1, 1]; // Latitude for the current row
-				coordinate <- point({starting_lon, starting_lat});
-				location <- point(to_GAMA_CRS(coordinate));
-				trip_id <- trip_data[2,0];
-				
-				loop x from: 0 to: stop_times_data.rows - 1 {
-					add stop_times_data[2, x] to: stop_departure_times;
-					add stop_times_data[1, x] to: stop_arrival_times;
-				}
-				
+		matrix trip_data <- matrix(single_trip_route38_csv);
+		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
+		create bus {
+			float starting_lon <- data[2, 1];
+			float starting_lat <- data[1, 1]; // Latitude for the current row
+			coordinate <- point({starting_lon, starting_lat});
+			location <- point(to_GAMA_CRS(coordinate));
+			trip_id <- trip_data[2, 0];
+			loop x from: 0 to: stop_times_data.rows - 1 {
+				add stop_times_data[2, x] to: stop_departure_times;
+				add stop_times_data[1, x] to: stop_arrival_times;
 			}
+		}
 
-
-
-		
+		create clock {
+			current_date <- starting_date;
+		}
 	}
-
 }
 
 species stop {
@@ -92,7 +85,6 @@ species stop {
 	aspect base {
 		draw circle(0.0004) color: #yellow border: #black;
 	}
-
 }
 
 species road {
@@ -108,37 +100,87 @@ species road {
 		draw shape color: #red;
 		draw next_stop_link color: #pink;
 	}
-
 }
 
 species bus skills: [moving] {
-
 	point coordinate;
 	path path_following <- list(the_graph) as_path the_graph;
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
-	reflex myfollow{
-		do follow path: path_following;
+
+	reflex myfollow {
+		// Loop through each stop time
+		loop x from: 0 to: length(stop_arrival_times) - 1 {
+			string current_arrival_time <- stop_arrival_times at x;
+			string current_departure_time <- stop_departure_times at x;
+
+			// Check if the current time matches the stop's arrival time
+			if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
+				write "Arriving at stop: " + x;
+				// Move the bus to the next stop
+				do follow path: path_following;
+
+				// Wait until the departure time before moving to the next stop
+				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
+					write "Departing from stop: " + x;
+					// Move to the next stop after the departure time
+					//do move distance: 0.001 on: path_following;
+					do follow path: path_following;
+				}
+			}
+		}
 	}
 
 	aspect base {
 		draw rectangle(0.001, 0.004) color: #blue border: #black; // Draw the bus
 		loop seg over: path_following.edges {
-	  		draw seg color: color;
-	 	 }
-	}
-
-}
-
-experiment main type: gui {
-	float minimum_cycle_duration <- 0.01;
-	output {
-		display myView{
-			species road aspect: base;
-			species stop aspect: base;
-			species bus aspect: base;
+			draw seg color: color;
 		}
 	}
 }
-	
+
+species clock {
+	date current_date update: date(cycle * step);
+	string day;
+
+	aspect default {
+		switch (current_date.day_of_week) {
+			match 1 {
+				day <- "Monday";
+			}
+			match 2 {
+				day <- "Tuesday";
+			}
+			match 3 {
+				day <- "Wednesday";
+			}
+			match 4 {
+				day <- "Thursday";
+			}
+			match 5 {
+				day <- "Friday";
+			}
+			match 6 {
+				day <- "Saturday";
+			}
+			match 7 {
+				day <- "Sunday";
+			}
+		}
+
+		draw string(day + string(current_date, " HH:mm:ss")) font: "times" color: #black at: {0, -0.005, 0};
+	}
+}
+
+experiment main type: gui {
+	float minimum_cycle_duration <- 0.001;
+	output {
+		display myView type: 3d {
+			species road aspect: base;
+			species stop aspect: base;
+			species bus aspect: base;
+			species clock aspect: default;
+		}
+	}
+}
