@@ -22,7 +22,10 @@ global {
         
 		// Create roads of the bus route from the CSV file data
 		matrix data <- matrix(route_38_road_csv);
-		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
+		int stop_index <- 0;
+		list<int> stop_indexes;
+		list<geometry> targets_init;
+		loop row from: 0 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
 			write "\nProcessing row: " + row;
 			float lon1 <- data[2, row]; // Longitude for the current row
 			float lat1 <- data[1, row]; // Latitude for the current row
@@ -34,7 +37,7 @@ global {
 			// Lon and lat values for current stop 
 				lon <- lon1;
 				lat <- lat1;
-
+				
 				// Lon and lat values for next stop
 				lon_next <- lon2;
 				lat_next <- lat2;
@@ -48,12 +51,25 @@ global {
 				point next_stop_location <- point(to_GAMA_CRS(next_stop_coordinate));
 
 				// Link the 2 stops together
+<<<<<<< Updated upstream
 				next_stop_link <- line(location, next_stop_location);	
+=======
+				next_stop_link <- line(location, next_stop_location);
+				write stop_index;
+				if((stop[stop_index].lon = lon1) and (stop[stop_index].lat = lat1))
+				{
+					add row to: stop_indexes;
+					add next_stop_link to: targets_init;
+					stop_index <- stop_index + 1;
+					is_stop <- true;
+				}
+>>>>>>> Stashed changes
 			}
 			
 
 		}
 		the_graph <- as_edge_graph(road);
+<<<<<<< Updated upstream
 			matrix trip_data <- matrix(single_trip_route38_csv);
 			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
 			create bus {
@@ -68,6 +84,20 @@ global {
 					add stop_times_data[1, x] to: stop_arrival_times;
 				}
 				
+=======
+		matrix trip_data <- matrix(single_trip_route38_csv);
+		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
+		create bus {
+			targets <- targets_init;
+			float starting_lon <- data[2, 1];
+			float starting_lat <- data[1, 1]; // Latitude for the current row
+			coordinate <- point({starting_lon, starting_lat});
+			location <- point(to_GAMA_CRS(coordinate));
+			trip_id <- trip_data[2, 0];
+			loop x from: 0 to: stop_times_data.rows - 1 {
+				add stop_times_data[2, x] to: stop_departure_times;
+				add stop_times_data[1, x] to: stop_arrival_times;
+>>>>>>> Stashed changes
 			}
 
 
@@ -103,6 +133,7 @@ species road {
 	float lat_next;
 	point coordinate;
 	geometry next_stop_link;
+	bool is_stop <- false;
 
 	aspect base {
 		draw shape color: #red;
@@ -114,12 +145,58 @@ species road {
 species bus skills: [moving] {
 
 	point coordinate;
+	int targets_index <- 0;
+	list<geometry> targets;
+	point target;
 	path path_following <- list(the_graph) as_path the_graph;
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
+<<<<<<< Updated upstream
 	reflex myfollow{
 		do follow path: path_following;
+=======
+	
+
+	reflex myfollow {
+		// Loop through each stop time
+		//target <- targets[targets_index];
+		
+		//do follow path: path_following;
+		
+		loop x from: 0 to: length(stop_arrival_times) - 1 {
+			string current_arrival_time <- stop_arrival_times at x;
+			string current_departure_time <- stop_departure_times at x;
+			//do goto(on:path_following, target: targets[1]);
+			//if(current_edge = targets[targets_index])
+			//{
+				// Check if the current time matches the stop's arrival time
+				if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
+					write "Arriving at stop: " + x;
+					write current_edge;
+					// Move the bus to the next stop
+					//do follow path: path_following;
+					do goto(on: path_following, target:targets[targets_index]);
+	
+					// Wait until the departure time before moving to the next stop
+					if string(current_date, " HH:mm:ss") = " " + current_departure_time {
+						write "Departing from stop: " + x;
+						// Move to the next stop after the departure time
+						//do move distance: 0.001 on: path_following;
+						//do follow path: path_following;
+						do goto(on: path_following, target:targets[targets_index]);
+					}
+					if(targets_index < 24)
+					{
+						targets_index <- targets_index + 1;
+						write "target_index" + targets_index;
+					}
+				}
+				//target <- targets[targets_index];
+				
+			//}
+		}
+>>>>>>> Stashed changes
 	}
 
 	aspect base {
