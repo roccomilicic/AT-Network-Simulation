@@ -51,10 +51,8 @@ global {
 				point next_stop_location <- point(to_GAMA_CRS(next_stop_coordinate));
 
 				// Link the 2 stops together
-<<<<<<< Updated upstream
+
 				next_stop_link <- line(location, next_stop_location);	
-=======
-				next_stop_link <- line(location, next_stop_location);
 				write stop_index;
 				if((stop[stop_index].lon = lon1) and (stop[stop_index].lat = lat1))
 				{
@@ -63,13 +61,13 @@ global {
 					stop_index <- stop_index + 1;
 					is_stop <- true;
 				}
->>>>>>> Stashed changes
+
 			}
 			
 
 		}
 		the_graph <- as_edge_graph(road);
-<<<<<<< Updated upstream
+
 			matrix trip_data <- matrix(single_trip_route38_csv);
 			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
 			create bus {
@@ -84,7 +82,7 @@ global {
 					add stop_times_data[1, x] to: stop_arrival_times;
 				}
 				
-=======
+
 		matrix trip_data <- matrix(single_trip_route38_csv);
 		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
 		create bus {
@@ -97,7 +95,7 @@ global {
 			loop x from: 0 to: stop_times_data.rows - 1 {
 				add stop_times_data[2, x] to: stop_departure_times;
 				add stop_times_data[1, x] to: stop_arrival_times;
->>>>>>> Stashed changes
+
 			}
 
 
@@ -106,6 +104,9 @@ global {
 	}
 
 }
+}
+}
+
 
 species stop {
 	string stop_name;
@@ -152,11 +153,6 @@ species bus skills: [moving] {
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
-<<<<<<< Updated upstream
-	reflex myfollow{
-		do follow path: path_following;
-=======
-	
 
 	reflex myfollow {
 		// Loop through each stop time
@@ -196,7 +192,7 @@ species bus skills: [moving] {
 				
 			//}
 		}
->>>>>>> Stashed changes
+
 	}
 
 	aspect base {
@@ -215,7 +211,9 @@ experiment main type: gui {
 			species road aspect: base;
 			species stop aspect: base;
 			species bus aspect: base;
+			}
 		}
 	}
-}
+
+
 	
