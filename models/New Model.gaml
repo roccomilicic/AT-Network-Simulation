@@ -1,5 +1,4 @@
-model Route_38
-
+model a
 
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
@@ -68,6 +67,9 @@ global {
 		create clock {
 			current_date <- starting_date;
 		}
+
+		// Create 10 people at random stops
+		create person number: 10;
 	}
 }
 
@@ -103,6 +105,35 @@ species road {
 	}
 }
 
+species person {
+	point destination;  // The stop where the person will get off the bus
+	bool on_bus <- false;
+	stop current_stop;  // The stop where the person is currently located
+
+	
+
+	reflex wait_for_bus when: not on_bus {
+		if (distance_to(bus.location) < 0.001) {  // Bus is at the stop
+			write "Person is boarding the bus.";
+			on_bus <- true;
+		}
+	}
+
+	reflex move_with_bus when: on_bus {
+		location <- bus.location;
+		if (distance_to(destination) < 0.001) {  // Get off at destination
+			on_bus <- false;
+			location <- destination;
+			write "Person has arrived at destination.";
+		}
+	}
+
+	aspect base {
+		//draw triangle(0.0005) color: if on_bus then #green else #blue; 
+		draw triangle(0.0005) color: (on_bus ? #green : #blue); // Different color if on bus or not
+	}
+}
+
 species bus skills: [moving] {
 	point coordinate;
 	path path_following <- list(the_graph) as_path the_graph;
@@ -125,8 +156,6 @@ species bus skills: [moving] {
 				// Wait until the departure time before moving to the next stop
 				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
 					write "Departing from stop: " + x;
-					// Move to the next stop after the departure time
-					//do move distance: 0.001 on: path_following;
 					do follow path: path_following speed: 16.0;
 				}
 			}
@@ -181,6 +210,7 @@ experiment main type: gui {
 			species road aspect: base;
 			species stop aspect: base;
 			species bus aspect: base;
+			species person aspect: base;
 			species clock aspect: default;
 		}
 	}
