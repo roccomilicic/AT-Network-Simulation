@@ -10,7 +10,7 @@ global {
 	geometry shape <- envelope(route_38_bounds);
 
 	// Variables for the clock species
-	date starting_date <- date([2024, 8, 12, 4, 30, 0]);
+	date starting_date <- date([2024, 8, 12, 4, 42, 0]);
 	float step <- 1 #second;
 
 	// Route matrixes for CSV data
@@ -66,6 +66,13 @@ global {
 			loop x from: 0 to: stop_times_data.rows - 1 {
 				add stop_times_data[2, x] to: stop_departure_times;
 				add stop_times_data[1, x] to: stop_arrival_times;
+				add stop_times_data[10, x] to: bus_speeds;
+			}
+
+			// Print out the loaded speed data for verification
+			write "Loaded bus speeds:";
+			loop x from: 0 to: length(bus_speeds) - 1 {
+				write "Speed for stop " + x + ": " + (bus_speeds at x) + " m/s";
 			}
 
 		}
@@ -118,35 +125,68 @@ species bus skills: [moving] {
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
+	list<float> bus_speeds;
 
 	reflex myfollow {
-		// Loop through each stop time
-		
-		loop x from: 0 to: length(stop_arrival_times) - 1 {
-			string current_arrival_time <- stop_arrival_times at x;
-			string current_departure_time <- stop_departure_times at x;
-
-			// Check if the current time matches the stop's arrival time
-			if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
-				write "\nArriving at stop: " + x + " @ " + current_arrival_time;
-				// Move the bus to the next stop
-				do follow path: path_following speed: 3.0;
-
-				// Wait until the departure time before moving to the next stop
-				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
-					write "Departing from stop: " + x + "\n------------------------\n";
-					// Move to the next stop after the departure time
-					//do move distance: 0.001 on: path_following;
-					do follow path: path_following speed: 3.0;
-					break;
-				}
-
+		loop i from: 0 to: length(route38_data) - 1 {
+		//do follow path: path_following speed: bus_speeds at 1;
+			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at 0 {
+				do follow path: path_following speed: bus_speeds at 1;
 			}
+
+			//			loop x from: 0 to: length(stop_arrival_times) - 1 {
+			//				string current_arrival_time <- stop_arrival_times at x;
+			//				string current_departure_time <- stop_departure_times at x;
+			//				float speed_to_next_stop <- bus_speeds at x;
+			//}
+			// Check if the current time matches the stop's arrival time
+			//				if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
+			//					write "\nArriving at stop: " + x + " @ " + current_arrival_time;
+			//					write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+			//					loop i from: 0 to: length(route38_data) - 1 {
+			//						do follow path: path_following speed: bus_speeds at 1;
+			//					}
+			//
+			//				}
+
+
+			// Move the bus to the next stop with the speed retrieved from the CSV
+			//					do follow path: path_following speed: speed_to_next_stop;
+			//	
+			//					// Wait until the departure time before moving to the next stop
+			//					if string(current_date, " HH:mm:ss") = " " + current_departure_time {
+			//						write "Departing from stop: " + x + "\n------------------------\n";
+			//						write "Continuing at speed: " + speed_to_next_stop + " m/s";
+			//						do follow path: path_following speed: speed_to_next_stop; // Continue at the retrieved speed
+			//					}
 
 		}
 
 	}
 
+	//		loop x from: 0 to: length(stop_arrival_times) - 1 {
+	//			string current_arrival_time <- stop_arrival_times at x;
+	//			string current_departure_time <- stop_departure_times at x;
+	//			float speed_to_next_stop <- bus_speeds at x;
+	//
+	//			// Check if the current time matches the stop's arrival time
+	//			if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
+	//				write "\nArriving at stop: " + x + " @ " + current_arrival_time;
+	//				write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+	//
+	//				// Move the bus to the next stop with the speed retrieved from the CSV
+	//				do follow path: path_following speed: speed_to_next_stop;
+	//
+	//				// Wait until the departure time before moving to the next stop
+	//				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
+	//					write "Departing from stop: " + x + "\n------------------------\n";
+	//					write "Continuing at speed: " + speed_to_next_stop + " m/s";
+	//					do follow path: path_following speed: speed_to_next_stop; // Continue at the retrieved speed
+	//				}
+	//
+	//			}
+	//
+	//		}
 	aspect base {
 		draw rectangle(0.0005, 0.001) color: #blue border: #black; // Draw the bus
 		loop seg over: path_following.edges {
