@@ -13,12 +13,15 @@ global {
 	date starting_date <- date([2024, 8, 12, 4, 30, 0]);
 	float step <- 1 #second;
 
+	// Route matrixes for CSV data
+	matrix data <- matrix(route_38_road_csv);
+	matrix route38_data <- matrix(route_38_csv);
+
 	init {
-		// Create stops from the CSV file data
+	// Create stops from the CSV file data
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file data
-		matrix data <- matrix(route_38_road_csv);
 		loop row from: 1 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
 			write "\nProcessing row: " + row;
 			float lon1 <- data[2, row]; // Longitude for the current row
@@ -26,17 +29,18 @@ global {
 			float lon2 <- data[2, row + 1]; // Longitude for the next row
 			float lat2 <- data[1, row + 1]; // Latitude for the next row
 
+
 			// Create road species based on collected data from CSV
 			create road {
-				// Lon and lat values for current stop 
+			// Lon and lat values for current point 
 				lon <- lon1;
 				lat <- lat1;
 
-				// Lon and lat values for next stop
+				// Lon and lat values for next point
 				lon_next <- lon2;
 				lat_next <- lat2;
 
-				// Location for the current stop to put the beginning of the road on the map
+				// Location for the current point to put the beginning of the road on the map
 				coordinate <- point({lon, lat});
 				location <- point(to_GAMA_CRS(coordinate));
 
@@ -47,6 +51,7 @@ global {
 				// Link the 2 stops together
 				next_stop_link <- line(location, next_stop_location);
 			}
+
 		}
 
 		the_graph <- as_edge_graph(road);
@@ -62,12 +67,15 @@ global {
 				add stop_times_data[2, x] to: stop_departure_times;
 				add stop_times_data[1, x] to: stop_arrival_times;
 			}
+
 		}
 
 		create clock {
 			current_date <- starting_date;
 		}
+
 	}
+
 }
 
 species stop {
@@ -85,6 +93,7 @@ species stop {
 	aspect base {
 		draw circle(0.0004) color: #yellow border: #black;
 	}
+
 }
 
 species road {
@@ -100,6 +109,7 @@ species road {
 		draw shape color: #red;
 		draw next_stop_link color: #pink;
 	}
+
 }
 
 species bus skills: [moving] {
@@ -111,33 +121,40 @@ species bus skills: [moving] {
 
 	reflex myfollow {
 		// Loop through each stop time
+		
 		loop x from: 0 to: length(stop_arrival_times) - 1 {
 			string current_arrival_time <- stop_arrival_times at x;
 			string current_departure_time <- stop_departure_times at x;
 
 			// Check if the current time matches the stop's arrival time
 			if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
-				write "Arriving at stop: " + x;
+				write "\nArriving at stop: " + x + " @ " + current_arrival_time;
 				// Move the bus to the next stop
-				do follow path: path_following;
+				do follow path: path_following speed: 3.0;
 
 				// Wait until the departure time before moving to the next stop
 				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
-					write "Departing from stop: " + x;
+					write "Departing from stop: " + x + "\n------------------------\n";
 					// Move to the next stop after the departure time
 					//do move distance: 0.001 on: path_following;
-					do follow path: path_following;
+					do follow path: path_following speed: 3.0;
+					break;
 				}
+
 			}
+
 		}
+
 	}
 
 	aspect base {
-		draw rectangle(0.001, 0.004) color: #blue border: #black; // Draw the bus
+		draw rectangle(0.0005, 0.001) color: #blue border: #black; // Draw the bus
 		loop seg over: path_following.edges {
 			draw seg color: color;
 		}
+
 	}
+
 }
 
 species clock {
@@ -149,28 +166,36 @@ species clock {
 			match 1 {
 				day <- "Monday";
 			}
+
 			match 2 {
 				day <- "Tuesday";
 			}
+
 			match 3 {
 				day <- "Wednesday";
 			}
+
 			match 4 {
 				day <- "Thursday";
 			}
+
 			match 5 {
 				day <- "Friday";
 			}
+
 			match 6 {
 				day <- "Saturday";
 			}
+
 			match 7 {
 				day <- "Sunday";
 			}
+
 		}
 
-		draw string(day + string(current_date, " HH:mm:ss")) font: "times" color: #black at: {0, -0.005, 0};
+		draw string(day + string(current_date, " HH:mm:ss")) font: "times" color: #black at: {0, 0.085, 0};
 	}
+
 }
 
 experiment main type: gui {
@@ -182,5 +207,7 @@ experiment main type: gui {
 			species bus aspect: base;
 			species clock aspect: default;
 		}
+
 	}
+
 }

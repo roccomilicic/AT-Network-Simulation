@@ -1,5 +1,5 @@
 stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,platform_code,wheelchair_boarding,start_date,end_date
-2375-c1152962,2375,Stop D Auckland Domestic Airport,,-37.00604,17479192,,,0,51474-d9dd1618,,D,0,20240228,20240514
+2375-c1152962,2375,Stop D Auckland Domestic Airport,,-37.00604,174.79192,,,0,51474-d9dd1618,,D,0,20240228,20240514
 2206-d03ff463,2206,Stop B Auckland Domestic Airport,,-37.00634,174.79112,,,0,51474-d9dd1618,,B,0,20240228,20240514
 2008-73e12a47,2008,Stop A International Airport,,-37.00435,174.7824,,,0,51473-5d04be43,,A,0,20240228,20240514
 2002-1e18547e,2002,New Zealand School of Tourism,,-36.9989,174.78924,,,0,,,,0,20240228,20240514
