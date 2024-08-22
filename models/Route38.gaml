@@ -128,73 +128,26 @@ species bus skills: [moving] {
 	list<float> bus_speeds;
 
 	reflex myfollow {
-		loop i from: 0 to: length(route38_data) - 1 {
-		//do follow path: path_following speed: bus_speeds at 1;
-			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at 0 {
-				do follow path: path_following speed: bus_speeds at 1;
+		int bus_stop <- 0;
+		loop i from: 0 to: length(route38_data) - 1 { // Each route point within the route (makes up the road)
+			write "\nCURRENT STOP: " + bus_stop; 
+			float speed_to_next_stop <- bus_speeds at bus_stop; // Save speed of bus depending on arrival stop
+			
+			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
+				bus_stop <- bus_stop + 1; // Incremenet bus stop number
+				write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
+				write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+				do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
 			}
-
-			//			loop x from: 0 to: length(stop_arrival_times) - 1 {
-			//				string current_arrival_time <- stop_arrival_times at x;
-			//				string current_departure_time <- stop_departure_times at x;
-			//				float speed_to_next_stop <- bus_speeds at x;
-			//}
-			// Check if the current time matches the stop's arrival time
-			//				if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
-			//					write "\nArriving at stop: " + x + " @ " + current_arrival_time;
-			//					write "Current speed for this segment: " + speed_to_next_stop + " m/s";
-			//					loop i from: 0 to: length(route38_data) - 1 {
-			//						do follow path: path_following speed: bus_speeds at 1;
-			//					}
-			//
-			//				}
-
-
-			// Move the bus to the next stop with the speed retrieved from the CSV
-			//					do follow path: path_following speed: speed_to_next_stop;
-			//	
-			//					// Wait until the departure time before moving to the next stop
-			//					if string(current_date, " HH:mm:ss") = " " + current_departure_time {
-			//						write "Departing from stop: " + x + "\n------------------------\n";
-			//						write "Continuing at speed: " + speed_to_next_stop + " m/s";
-			//						do follow path: path_following speed: speed_to_next_stop; // Continue at the retrieved speed
-			//					}
-
 		}
-
 	}
 
-	//		loop x from: 0 to: length(stop_arrival_times) - 1 {
-	//			string current_arrival_time <- stop_arrival_times at x;
-	//			string current_departure_time <- stop_departure_times at x;
-	//			float speed_to_next_stop <- bus_speeds at x;
-	//
-	//			// Check if the current time matches the stop's arrival time
-	//			if string(current_date, " HH:mm:ss") = " " + current_arrival_time {
-	//				write "\nArriving at stop: " + x + " @ " + current_arrival_time;
-	//				write "Current speed for this segment: " + speed_to_next_stop + " m/s";
-	//
-	//				// Move the bus to the next stop with the speed retrieved from the CSV
-	//				do follow path: path_following speed: speed_to_next_stop;
-	//
-	//				// Wait until the departure time before moving to the next stop
-	//				if string(current_date, " HH:mm:ss") = " " + current_departure_time {
-	//					write "Departing from stop: " + x + "\n------------------------\n";
-	//					write "Continuing at speed: " + speed_to_next_stop + " m/s";
-	//					do follow path: path_following speed: speed_to_next_stop; // Continue at the retrieved speed
-	//				}
-	//
-	//			}
-	//
-	//		}
 	aspect base {
 		draw rectangle(0.0005, 0.001) color: #blue border: #black; // Draw the bus
 		loop seg over: path_following.edges {
 			draw seg color: color;
 		}
-
 	}
-
 }
 
 species clock {
