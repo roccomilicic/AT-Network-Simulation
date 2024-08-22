@@ -35,7 +35,7 @@ for i in range(1, len(df)):
 # Add the calculated speeds to the DataFrame
 df['speed_m_per_s'] = [0] + speeds  # First stop has no speed since there's no previous stop
 
-# Optionally, save the DataFrame to a new CSV file with speeds
+# Overwrite the original CSV file with the new data
 df.to_csv('../includes/stop_times_single_Route38.csv', index=False)
 
-print("Speeds calculated and saved to output CSV file.")
+print("Speeds calculated and saved to the original CSV file.")
