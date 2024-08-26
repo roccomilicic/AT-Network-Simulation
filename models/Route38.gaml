@@ -124,7 +124,7 @@ species bus skills: [moving] {
 		int bus_stop <- 0;
 		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
 			write "\nCURRENT STOP: " + bus_stop;
-			float speed_to_next_stop <- bus_speeds at bus_stop; // Save speed of bus depending on arrival stop
+			float speed_to_next_stop <- bus_speeds at bus_stop * 65; // Save speed of bus depending on arrival stop
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
 				write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
