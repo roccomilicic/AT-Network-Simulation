@@ -1,6 +1,5 @@
 import csv
 import math
-import os
 
 # Function to calculate the Haversine distance between two points in meters
 def haversine(lat1, lon1, lat2, lon2):
@@ -21,13 +20,23 @@ def interpolate(lat1, lon1, lat2, lon2, fraction):
     lon = lon1 + (lon2 - lon1) * fraction
     return lat, lon
 
-# Load CSV data
-print("Loading CSV data...")
-with open('../includes/gtfs_Route_38.csv', mode='r') as infile:
-    reader = csv.DictReader(infile)
-    points = [(float(row['shape_pt_lat']), float(row['shape_pt_lon'])) for row in reader]
+# Define the input and output file paths
+input_file = '../includes/gtfs_Route_38.csv'
 
-print(f"Total points loaded: {len(points)}")
+# Load CSV data
+print(f"Loading CSV data from '{input_file}'...")
+try:
+    with open(input_file, mode='r') as infile:
+        reader = csv.DictReader(infile)
+        points = [(float(row['shape_pt_lat']), float(row['shape_pt_lon'])) for row in reader]
+
+    print(f"Total points loaded: {len(points)}")
+except FileNotFoundError:
+    print(f"Error: The file '{input_file}' was not found.")
+    exit()
+except Exception as e:
+    print(f"Error loading file: {e}")
+    exit()
 
 fixed_distance = 50  # Distance between shape points in meters
 new_points = [points[0]]  # Start with the first point
@@ -46,21 +55,25 @@ for i in range(1, len(points)):
     while distance > fixed_distance:
         fraction = fixed_distance / distance
         lat1, lon1 = interpolate(lat1, lon1, lat2, lon2, fraction)
-        new_points.append((lat1, lon1))
-        print(f"Added new interpolated point: ({lat1:.6f}, {lon1:.6f})")
-        distance = haversine(lat1, lon1, lat2, lon2)
+        
+        # Calculate the distance to the next point
+        next_distance = haversine(lat1, lon1, lat2, lon2)
+        
+        # Only add the new point if it's appropriately spaced from the previous one
+        if next_distance >= fixed_distance:
+            new_points.append((lat1, lon1))
+            print(f"Added new interpolated point: ({lat1:.6f}, {lon1:.6f})")
+        distance = next_distance
     
     # Add the final point of this segment if it hasn't been added already
-    if distance > 0:
+    if distance > 0 and distance >= fixed_distance:
         new_points.append((lat2, lon2))
         print(f"Added endpoint: ({lat2:.6f}, {lon2:.6f})")
 
-# Write the new shape points to a CSV file
-output_file = 'new_bus_route.csv'
-print(f"Writing new shape points to {output_file}...")
-
+# Write the new shape points back to the same CSV file
+print(f"Overwriting CSV data in '{input_file}'...")
 try:
-    with open(output_file, mode='w', newline='') as outfile:
+    with open(input_file, mode='w', newline='') as outfile:
         writer = csv.writer(outfile)
         writer.writerow(['shape_id', 'shape_pt_lat', 'shape_pt_lon', 'shape_pt_sequence', 'shape_dist_traveled'])
         
@@ -68,13 +81,7 @@ try:
             writer.writerow([f'new_shape_id', lat, lon, i + 1, i * fixed_distance])
             print(f"Written point {i+1}: ({lat:.6f}, {lon:.6f})")
 
-    print(f"New shape points generated and saved to '{output_file}'")
-    
-    # Check if file was actually created
-    if os.path.exists(output_file):
-        print(f"File '{output_file}' was successfully created.")
-    else:
-        print(f"File '{output_file}' was not created. Please check file path and permissions.")
+    print(f"New shape points successfully written to '{input_file}'")
 
 except Exception as e:
     print(f"Error writing file: {e}")
