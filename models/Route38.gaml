@@ -123,14 +123,17 @@ species bus skills: [moving] {
 	reflex myfollow {
 		int bus_stop <- 0;
 		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
+			
+			float speed_to_next_stop <- bus_speeds at bus_stop / 22; // Save speed of bus depending on arrival stop
 			write "\nCURRENT STOP: " + bus_stop;
-			float speed_to_next_stop <- bus_speeds at bus_stop; // Save speed of bus depending on arrival stop
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
-				write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
-				write "Current speed for this segment: " + speed_to_next_stop + " m/s";
-				do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
+				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
+				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+				
+				
 			}
+			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
 
 		}
 
