@@ -22,12 +22,19 @@ global {
 		int stop_index <- 0;
 		list<int> stop_indexes;
 		list<geometry> targets_init;
-		loop row from: 0 to: data.rows - 2 { // Iterate through rows, stopping at the second to last row
+		loop row from: 0 to: data.rows - 1 { // Iterate through rows, stopping at the second to last row
 			write "\nProcessing row: " + row;
 			float lon1 <- data[2, row]; // Longitude for the current row
 			float lat1 <- data[1, row]; // Latitude for the current row
-			float lon2 <- data[2, row + 1]; // Longitude for the next row
-			float lat2 <- data[1, row + 1]; // Latitude for the next row
+			
+			float lon2 <- 0.0;
+			float lat2 <- 0.0;
+			
+			if(row < data.rows - 1)
+			{
+				lon2 <- data[2, row + 1]; // Longitude for the next row
+				lat2 <- data[1, row + 1]; // Latitude for the next row
+			}
 
 			// Create road species based on collected data from CSV
 			create road {
@@ -35,9 +42,13 @@ global {
 				lon <- lon1;
 				lat <- lat1;
 				
+				if(row < data.rows -1)
+				{
 				// Lon and lat values for next stop
-				lon_next <- lon2;
-				lat_next <- lat2;
+					lon_next <- lon2;
+					lat_next <- lat2;
+				
+				}
 
 				// Location for the current stop to put the beginning of the road on the map
 				coordinate <- point({lon, lat});
@@ -49,7 +60,10 @@ global {
 
 				// Link the 2 stops together
 
-				next_stop_link <- line(location, next_stop_location);	
+				if(row < data.rows -1)
+				{
+					next_stop_link <- line(location, next_stop_location);	
+				}
 				write stop_index;
 				if((stop[stop_index].lon = lon1) and (stop[stop_index].lat = lat1))
 				{
@@ -66,18 +80,6 @@ global {
 
 			matrix trip_data <- matrix(single_trip_route38_csv);
 			matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
-			create bus {
-				float starting_lon <- data[2, 1];
-				float starting_lat <- data[1, 1]; // Latitude for the current row
-				coordinate <- point({starting_lon, starting_lat});
-				location <- point(to_GAMA_CRS(coordinate));
-				trip_id <- trip_data[2,0];
-				
-				loop x from: 0 to: stop_times_data.rows - 1 {
-					add stop_times_data[2, x] to: stop_departure_times;
-					add stop_times_data[1, x] to: stop_arrival_times;
-				}
-				
 
 		matrix trip_data <- matrix(single_trip_route38_csv);
 		matrix stop_times_data <- matrix(single_trip_stop_times_route38_csv);
@@ -164,7 +166,8 @@ species bus skills: [moving] {
 					write current_edge;
 					// Move the bus to the next stop
 					//do follow path: path_following;
-					do goto(on: path_following, target:targets[targets_index]);
+					//do goto(on: path_following, target:targets[targets_index]);
+					do goto on:path_following target:targets[targets_index];
 	
 					// Wait until the departure time before moving to the next stop
 					if string(current_date, " HH:mm:ss") = " " + current_departure_time {
@@ -172,9 +175,10 @@ species bus skills: [moving] {
 						// Move to the next stop after the departure time
 						//do move distance: 0.001 on: path_following;
 						//do follow path: path_following;
-						do goto(on: path_following, target:targets[targets_index]);
+						//do goto(on: path_following, target:targets[targets_index]);
+						do goto on:path_following target:targets[targets_index];
 					}
-					if(targets_index < 24)
+					if(targets_index < 25)
 					{
 						targets_index <- targets_index + 1;
 						write "target_index" + targets_index;
@@ -228,15 +232,15 @@ species clock {
 	}
 }
 
-experiment main type: gui {
-	float minimum_cycle_duration <- 0.001;
-	output {
-		display myView type: 3d {
-			species road aspect: base;
-			species stop aspect: base;
-			species bus aspect: base;
-			species clock aspect: default;
+	experiment main type: gui {
+		float minimum_cycle_duration <- 0.001;
+		output {
+			display myView type: 3d {
+				species road aspect: base;
+				species stop aspect: base;
+				species bus aspect: base;
+				species clock aspect: default;
+			}
 		}
 	}
-}
-}
+
