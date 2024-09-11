@@ -16,8 +16,17 @@ global {
 	// Route matrixes for CSV route_38_roads
 	matrix route_38_roads <- matrix(route_38_road_csv);
 	matrix route_38_stops <- matrix(route_38_stops_csv);
+	
+	// Bus routes
+	matrix all_bus_trips_matrix <- matrix(all_bus_trips);
+	matrix route_38_trip_matrix <- matrix(route_38_trip);
+	string first_departure_time <- route_38_trip_matrix[2, 0];
 
 	init {
+		create clock {
+			current_date <- starting_date;
+		}
+
 		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file route_38_roads
@@ -54,24 +63,30 @@ global {
 		}
 
 		the_graph <- as_edge_graph(road); // Create graph for all road points
-		
-		matrix all_bus_trips_matrix <- matrix(all_bus_trips);
-		matrix route_38_trip_matrix <- matrix(route_38_trip);
-		create bus {
-			float starting_lon <- route_38_roads[2, 1];
-			float starting_lat <- route_38_roads[1, 1]; 
-			coordinate <- point({starting_lon, starting_lat});
-			location <- point(to_GAMA_CRS(coordinate));
-			trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
-			loop x from: 0 to: route_38_trip_matrix.rows - 1 {
-				add route_38_trip_matrix[2, x] to: stop_departure_times;
-				add route_38_trip_matrix[1, x] to: stop_arrival_times;
-				add route_38_trip_matrix[10, x] to: bus_speeds;
-			}
-		}
 
-		create clock {
-			current_date <- starting_date;
+	}
+
+	reflex check_bus_creation {
+	// Format the current time consistently
+		string current_time <- string(current_date, "HH:mm:ss");
+
+		// Check if the current time is equal to or past the first departure time
+		if (current_time = first_departure_time) {
+			create bus {
+				float starting_lon <- route_38_roads[2, 1];
+				float starting_lat <- route_38_roads[1, 1];
+				coordinate <- point({starting_lon, starting_lat});
+				location <- point(to_GAMA_CRS(coordinate));
+				trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
+				loop x from: 0 to: route_38_trip_matrix.rows - 1 {
+					add route_38_trip_matrix[2, x] to: stop_departure_times;
+					add route_38_trip_matrix[1, x] to: stop_arrival_times;
+					add route_38_trip_matrix[10, x] to: bus_speeds;
+				}
+
+			}
+			// After bus creation, stop checking
+			stop check_bus_creation;
 		}
 
 	}
@@ -123,16 +138,15 @@ species bus skills: [moving] {
 	reflex myfollow {
 		int bus_stop <- 0;
 		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-			
 			float speed_to_next_stop <- bus_speeds at bus_stop * 0.79; // Save speed of bus depending on arrival stop
-			write "\nCURRENT STOP: " + bus_stop;
+			//write "\nCURRENT STOP: " + bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
 				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
 				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
-				
-				
+
 			}
+
 			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
 
 		}
