@@ -34,8 +34,10 @@ global {
 			write "\nProcessing row: " + row;
 			float lon1 <- route_38_roads[2, row]; // Longitude for the current row
 			float lat1 <- route_38_roads[1, row]; // Latitude for the current row
+			
 			float lon2 <- route_38_roads[2, row + 1]; // Longitude for the next row
 			float lat2 <- route_38_roads[1, row + 1]; // Latitude for the next row
+		
 
 
 			// Create road species based on collected route_38_roads from CSV
@@ -60,20 +62,6 @@ global {
 				next_road_link <- line(next_location, next_location);
 			}
 
-				if(row < data.rows -1)
-				{
-					next_stop_link <- line(location, next_stop_location);	
-				}
-				write stop_index;
-				if((stop[stop_index].lon = lon1) and (stop[stop_index].lat = lat1))
-				{
-					add row to: stop_indexes;
-					add next_stop_link to: targets_init;
-					stop_index <- stop_index + 1;
-					is_stop <- true;
-				}
-
-			}
 		}
 
 		the_graph <- as_edge_graph(road); // Create graph for all road points
@@ -105,8 +93,7 @@ global {
 
 	}
 
-
-
+}
 
 species stop {
 	string stop_name;
@@ -123,6 +110,7 @@ species stop {
 	aspect base {
 		draw circle(0.0004) color: #yellow border: #black;
 	}
+
 }
 
 species road {
@@ -138,13 +126,11 @@ species road {
 		draw shape color: #red;
 		draw next_road_link color: #pink;
 	}
+
 }
 
 species bus skills: [moving] {
 	point coordinate;
-	int targets_index <- 0;
-	list<geometry> targets;
-	point target;
 	path path_following <- list(the_graph) as_path the_graph;
 	string trip_id;
 	list<string> stop_departure_times;
@@ -153,8 +139,8 @@ species bus skills: [moving] {
 
 	reflex myfollow {
 		int bus_stop <- 0;
-		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-			float speed_to_next_stop <- bus_speeds at bus_stop * 0.79; // Save speed of bus depending on arrival stop
+		loop i from: 0 to: length(route_38_stops)-1{// Each route point within the route (makes up the road)
+			float speed_to_next_stop <- bus_speeds at bus_stop; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
@@ -163,10 +149,18 @@ species bus skills: [moving] {
 
 			}
 
+			do follow speed: speed_to_next_stop path: path_following ; // follow the path with given speed for current bus stop
+
+		} 
+		/*loop while: bus_stop != route_38_stops.rows - 1{
+			float speed_to_next_stop <- bus_speeds at bus_stop;
+			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
+				bus_stop <- bus_stop + 1; // Incremenet bus stop number
+				}
 			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
-
-		}
-
+			
+		}*/
+	//do follow path: path_following speed: 0.0;
 	}
 
 	aspect base {
