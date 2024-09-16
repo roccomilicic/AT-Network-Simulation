@@ -6,6 +6,7 @@ global {
 	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
 	file all_bus_trips <- csv_file("../includes/single_trip_Route38.csv");
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
+	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
 
