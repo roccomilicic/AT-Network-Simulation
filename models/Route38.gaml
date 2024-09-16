@@ -136,14 +136,17 @@ species bus skills: [moving] {
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
 	list<float> bus_speeds;
-
+	int bus_stop <- 0;
+	float speed_to_next_stop;
 	reflex myfollow {
-		int bus_stop <- 0;
+		if(cycle < 2580){
 		loop i from: 0 to: length(route_38_stops)-1{// Each route point within the route (makes up the road)
-			float speed_to_next_stop <- bus_speeds at bus_stop; // Save speed of bus depending on arrival stop
+			speed_to_next_stop <- (bus_speeds at bus_stop) * 0.75; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
+				speed_to_next_stop <- (bus_speeds at bus_stop) * 0.75; // Save speed of bus depending on arrival stop
+				write"\n at bus stop " + bus_stop;
 				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
 				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
 
@@ -152,6 +155,9 @@ species bus skills: [moving] {
 			do follow speed: speed_to_next_stop path: path_following ; // follow the path with given speed for current bus stop
 
 		} 
+		}
+		do follow speed: 0.0 path: path_following ;
+		
 		/*loop while: bus_stop != route_38_stops.rows - 1{
 			float speed_to_next_stop <- bus_speeds at bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
