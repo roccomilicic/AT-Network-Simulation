@@ -30,7 +30,7 @@ global {
 			current_date <- starting_date;
 		}
 
-		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
+		create stop from: csv_file("../includes/stops38_35.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file route_38_roads
 		loop row from: 1 to: route_38_roads.rows - 2 { // Iterate through rows, stopping at the second to last row
