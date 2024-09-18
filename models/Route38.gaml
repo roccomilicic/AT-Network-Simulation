@@ -2,8 +2,8 @@ model Route_38
 
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
-	file route_38_stops_csv <- csv_file("../includes/stops.csv", ",");
-	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
+	file route_38_stops_csv <- csv_file("../includes/stops38_35.csv", ",");
+	file route_38_road_csv <- csv_file("../includes/gtfs_route_38_35.csv", ",");
 	file all_bus_trips <- csv_file("../includes/single_trip_Route38.csv");
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
 	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
@@ -30,7 +30,7 @@ global {
 			current_date <- starting_date;
 		}
 
-		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
+		create stop from: csv_file("../includes/stops38_35.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file route_38_roads
 		loop row from: 1 to: route_38_roads.rows - 2 { // Iterate through rows, stopping at the second to last row
