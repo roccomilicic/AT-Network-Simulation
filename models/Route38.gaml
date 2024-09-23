@@ -8,6 +8,8 @@ global {
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
 	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
 	graph the_graph;
+	graph graph_route38;
+	graph graph_route35;
 	geometry shape <- envelope(route_38_bounds);
 
 	// Variables for the clock species
@@ -40,24 +42,50 @@ global {
 			float lon2 <- route_38_roads[2, row + 1]; // Longitude for the next row
 			float lat2 <- route_38_roads[1, row + 1]; // Latitude for the next row
 
+			string shape_id <- route_38_roads[0, row];
+			string shape_id_next <- route_38_roads[0, row + 1];
 
 			// Create road species based on collected route_38_roads from CSV
 			create road {
 			// Lon and lat values for current point 
-				lon <- lon1;
-				lat <- lat1;
+				
+				if (shape_id = shape_id_next) {
+					
+					lon <- lon1;
+					lat <- lat1;
 
-				// Location for the current point to put the beginning of the road on the map
-				coordinate <- point({lon, lat});
-				location <- point(to_GAMA_CRS(coordinate));
+					// Location for the current point to put the beginning of the road on the map
+					coordinate <- point({lon, lat});
+					location <- point(to_GAMA_CRS(coordinate));
 
-				// Lon and lat values for next point
-				lon_next <- lon2;
-				lat_next <- lat2;
+					// Lon and lat values for next point
+					lon_next <- lon2;
+					lat_next <- lat2;
 
-				// Location for the next stop to put the beginning of the road on the map
-				point next_coordinate <- point({lon_next, lat_next});
-				point next_location <- point(to_GAMA_CRS(next_coordinate));
+					// Location for the next stop to put the beginning of the road on the map
+					point next_coordinate <- point({lon_next, lat_next});
+					point next_location <- point(to_GAMA_CRS(next_coordinate));
+				}
+				
+				else {
+					shape_id <- shape_id_next;
+					
+					lon <- lon1;
+					lat <- lat1;
+
+					// Location for the current point to put the beginning of the road on the map
+					coordinate <- point({lon, lat});
+					location <- point(to_GAMA_CRS(coordinate));
+
+					// Lon and lat values for next point
+					lon_next <- lon2;
+					lat_next <- lat2;
+
+					// Location for the next stop to put the beginning of the road on the map
+					point next_coordinate <- point({lon_next, lat_next});
+					point next_location <- point(to_GAMA_CRS(next_coordinate));
+					
+				}
 
 				// Link the 2 stops together
 				//next_road_link <- line(next_location, next_location);
@@ -81,7 +109,7 @@ global {
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");
 			string next_start_time <- bus_start_times at next_bus_index;
-			write "Next start time: " + next_start_time;
+			//write "Next start time: " + next_start_time;
 			if (current_time >= next_start_time) {
 				create bus {
 					float starting_lon <- route_38_roads[2, 1];
@@ -154,7 +182,7 @@ species bus skills: [moving] {
 	reflex myfollow {
 		int bus_stop <- 0;
 		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-			float speed_to_next_stop <- bus_speeds at bus_stop * 0.79; // Save speed of bus depending on arrival stop
+			float speed_to_next_stop <- bus_speeds at bus_stop * 0.53; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
