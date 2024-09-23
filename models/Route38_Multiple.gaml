@@ -2,14 +2,12 @@ model Route_38
 
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
-	file route_38_stops_csv <- csv_file("../includes/stops38_35.csv", ",");
-	file route_38_road_csv <- csv_file("../includes/gtfs_route_38_35.csv", ",");
+	file route_38_stops_csv <- csv_file("../includes/stops.csv", ",");
+	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
 	file all_bus_trips <- csv_file("../includes/single_trip_Route38.csv");
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
 	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
 	graph the_graph;
-	graph graph_route38;
-	graph graph_route35;
 	geometry shape <- envelope(route_38_bounds);
 
 	// Variables for the clock species
@@ -32,63 +30,37 @@ global {
 			current_date <- starting_date;
 		}
 
-		create stop from: csv_file("../includes/stops38_35.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
+		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file route_38_roads
 		loop row from: 1 to: route_38_roads.rows - 2 { // Iterate through rows, stopping at the second to last row
-		//write "\nProcessing row: " + row;
+			write "\nProcessing row: " + row;
 			float lon1 <- route_38_roads[2, row]; // Longitude for the current row
 			float lat1 <- route_38_roads[1, row]; // Latitude for the current row
 			float lon2 <- route_38_roads[2, row + 1]; // Longitude for the next row
 			float lat2 <- route_38_roads[1, row + 1]; // Latitude for the next row
 
-			string shape_id <- route_38_roads[0, row];
-			string shape_id_next <- route_38_roads[0, row + 1];
 
 			// Create road species based on collected route_38_roads from CSV
 			create road {
 			// Lon and lat values for current point 
-				
-				if (shape_id = shape_id_next) {
-					
-					lon <- lon1;
-					lat <- lat1;
+				lon <- lon1;
+				lat <- lat1;
 
-					// Location for the current point to put the beginning of the road on the map
-					coordinate <- point({lon, lat});
-					location <- point(to_GAMA_CRS(coordinate));
+				// Location for the current point to put the beginning of the road on the map
+				coordinate <- point({lon, lat});
+				location <- point(to_GAMA_CRS(coordinate));
 
-					// Lon and lat values for next point
-					lon_next <- lon2;
-					lat_next <- lat2;
+				// Lon and lat values for next point
+				lon_next <- lon2;
+				lat_next <- lat2;
 
-					// Location for the next stop to put the beginning of the road on the map
-					point next_coordinate <- point({lon_next, lat_next});
-					point next_location <- point(to_GAMA_CRS(next_coordinate));
-				}
-				
-				else {
-					shape_id <- shape_id_next;
-					
-					lon <- lon1;
-					lat <- lat1;
-
-					// Location for the current point to put the beginning of the road on the map
-					coordinate <- point({lon, lat});
-					location <- point(to_GAMA_CRS(coordinate));
-
-					// Lon and lat values for next point
-					lon_next <- lon2;
-					lat_next <- lat2;
-
-					// Location for the next stop to put the beginning of the road on the map
-					point next_coordinate <- point({lon_next, lat_next});
-					point next_location <- point(to_GAMA_CRS(next_coordinate));
-					
-				}
+				// Location for the next stop to put the beginning of the road on the map
+				point next_coordinate <- point({lon_next, lat_next});
+				point next_location <- point(to_GAMA_CRS(next_coordinate));
 
 				// Link the 2 stops together
-				//next_road_link <- line(next_location, next_location);
+				next_road_link <- line(next_location, next_location);
 			}
 
 		}
@@ -105,7 +77,7 @@ global {
 
 	}
 
-	reflex check_bus_creation {
+		reflex check_bus_creation {
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");
 			string next_start_time <- bus_start_times at next_bus_index;
@@ -178,23 +150,40 @@ species bus skills: [moving] {
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
 	list<float> bus_speeds;
+	int bus_stop <- 0;
+	float speed_to_next_stop;
 
 	reflex myfollow {
-		int bus_stop <- 0;
-		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-			float speed_to_next_stop <- bus_speeds at bus_stop * 0.53; // Save speed of bus depending on arrival stop
-			//write "\nCURRENT STOP: " + bus_stop;
-			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
-				bus_stop <- bus_stop + 1; // Incremenet bus stop number
-				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
-				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+		if (cycle < 2580) {
+			loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
+				speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
+				//write "\nCURRENT STOP: " + bus_stop;
+				if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
+					bus_stop <- bus_stop + 1; // Incremenet bus stop number
+					speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
+					write "\n at bus stop " + bus_stop;
+					//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
+					//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+
+				}
+
+				do follow speed: speed_to_next_stop path: path_following; // follow the path with given speed for current bus stop
 
 			}
 
-			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
-
 		}
 
+		do follow speed: 0.0 path: path_following;
+
+		/*loop while: bus_stop != route_38_stops.rows - 1{
+			float speed_to_next_stop <- bus_speeds at bus_stop;
+			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
+				bus_stop <- bus_stop + 1; // Incremenet bus stop number
+				}
+			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
+			
+		}*/
+//do follow path: path_following speed: 0.0;
 	}
 
 	aspect base {
