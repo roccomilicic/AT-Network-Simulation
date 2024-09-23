@@ -2,10 +2,11 @@ model Route_38
 
 global {
 	file route_38_bounds <- shape_file("../includes/Route_38_Stops.shp");
-	file route_38_stops_csv <- csv_file("../includes/stops.csv", ",");
-	file route_38_road_csv <- csv_file("../includes/gtfs_Route_38.csv", ",");
+	file route_38_stops_csv <- csv_file("../includes/stops38_35.csv", ",");
+	file route_38_road_csv <- csv_file("../includes/gtfs_route_38_35.csv", ",");
 	file all_bus_trips <- csv_file("../includes/single_trip_Route38.csv");
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
+	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
 	graph the_graph;
 	geometry shape <- envelope(route_38_bounds);
 
@@ -16,22 +17,24 @@ global {
 	// Route matrixes for CSV route_38_roads
 	matrix route_38_roads <- matrix(route_38_road_csv);
 	matrix route_38_stops <- matrix(route_38_stops_csv);
-	
+
 	// Bus routes
 	matrix all_bus_trips_matrix <- matrix(all_bus_trips);
 	matrix route_38_trip_matrix <- matrix(route_38_trip);
+	matrix route_38_multiple_trip_matrix <- matrix(multiple_route_38_trips);
 	string first_departure_time <- route_38_trip_matrix[2, 0];
-
+	list<string> bus_start_times <- [];
+	int next_bus_index <- 0; // Index to keep track of the next bus to create
 	init {
 		create clock {
 			current_date <- starting_date;
 		}
 
-		create stop from: csv_file("../includes/stops.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
+		create stop from: csv_file("../includes/stops38_35.csv", true) with: [stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 
 		// Create roads of the bus route from the CSV file route_38_roads
 		loop row from: 1 to: route_38_roads.rows - 2 { // Iterate through rows, stopping at the second to last row
-			write "\nProcessing row: " + row;
+		//write "\nProcessing row: " + row;
 			float lon1 <- route_38_roads[2, row]; // Longitude for the current row
 			float lat1 <- route_38_roads[1, row]; // Latitude for the current row
 			float lon2 <- route_38_roads[2, row + 1]; // Longitude for the next row
@@ -64,29 +67,42 @@ global {
 
 		the_graph <- as_edge_graph(road); // Create graph for all road points
 
+		// Populate bus_start_times with start times from the matrix (where the first stop is true)
+		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
+			if (route_38_multiple_trip_matrix[11, i] = "True") {
+				add route_38_multiple_trip_matrix[2, i] to: bus_start_times;
+			}
+
+		}
+
 	}
 
 	reflex check_bus_creation {
-	// Format the current time consistently
-		string current_time <- string(current_date, "HH:mm:ss");
+		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
+			string current_time <- string(current_date, "HH:mm:ss");
+			string next_start_time <- bus_start_times at next_bus_index;
+			write "Next start time: " + next_start_time;
+			if (current_time >= next_start_time) {
+				create bus {
+					float starting_lon <- route_38_roads[2, 1];
+					float starting_lat <- route_38_roads[1, 1];
+					coordinate <- point({starting_lon, starting_lat});
+					location <- point(to_GAMA_CRS(coordinate));
+					trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
+					loop x from: 0 to: route_38_trip_matrix.rows - 1 {
+						add route_38_trip_matrix[2, x] to: stop_departure_times;
+						add route_38_trip_matrix[1, x] to: stop_arrival_times;
+						add route_38_trip_matrix[10, x] to: bus_speeds;
+					}
 
-		// Check if the current time is equal to or past the first departure time
-		if (current_time = first_departure_time) {
-			create bus {
-				float starting_lon <- route_38_roads[2, 1];
-				float starting_lat <- route_38_roads[1, 1];
-				coordinate <- point({starting_lon, starting_lat});
-				location <- point(to_GAMA_CRS(coordinate));
-				trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
-				loop x from: 0 to: route_38_trip_matrix.rows - 1 {
-					add route_38_trip_matrix[2, x] to: stop_departure_times;
-					add route_38_trip_matrix[1, x] to: stop_arrival_times;
-					add route_38_trip_matrix[10, x] to: bus_speeds;
 				}
 
+				// Move to the next bus in the list
+				next_bus_index <- next_bus_index + 1;
 			}
-			// After bus creation, stop checking
-			stop check_bus_creation;
+
+		} else {
+			stop check_bus_creation; // Stop checking when all buses are created
 		}
 
 	}
