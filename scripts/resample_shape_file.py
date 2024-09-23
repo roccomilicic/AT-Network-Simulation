@@ -21,15 +21,14 @@ def interpolate(lat1, lon1, lat2, lon2, fraction):
     return lat, lon
 
 # Define the input and output file paths
-input_file = '../includes/gtfs_Route_38.csv'
+input_file = '../includes/gtfs_route_38_35.csv'
 
 # Load CSV data
 print(f"Loading CSV data from '{input_file}'...")
 try:
     with open(input_file, mode='r') as infile:
         reader = csv.DictReader(infile)
-        points = [(float(row['shape_pt_lat']), float(row['shape_pt_lon'])) for row in reader]
-
+        points = [(row['shape_id'], float(row['shape_pt_lat']), float(row['shape_pt_lon']), float(row['shape_dist_traveled'])) for row in reader]
     print(f"Total points loaded: {len(points)}")
 except FileNotFoundError:
     print(f"Error: The file '{input_file}' was not found.")
@@ -38,14 +37,22 @@ except Exception as e:
     print(f"Error loading file: {e}")
     exit()
 
-fixed_distance = 50  # Distance between shape points in meters
-new_points = [points[0]]  # Start with the first point
+# Constants for point generation
+fixed_distance = 50  # Fixed distance of 50 meters between shape points
+new_points = [(points[0][0], points[0][1], points[0][2], 0)]  # Start with the first point
+
 print("Processing segments...")
 
 # Process each segment between consecutive points
 for i in range(1, len(points)):
-    lat1, lon1 = new_points[-1]
-    lat2, lon2 = points[i]
+    shape_id1, lat1, lon1, dist_travel1 = new_points[-1]  # Last point in the new list
+    shape_id2, lat2, lon2, dist_travel2 = points[i]  # Current point from the input data
+    
+    # Skip if shape_id changes (new route/segment starts)
+    if shape_id1 != shape_id2:
+        print(f"Skipping interpolation between point {i-1} and {i} due to shape_id change: {shape_id1} -> {shape_id2}")
+        new_points.append((shape_id2, lat2, lon2, dist_travel2))
+        continue
     
     # Calculate the distance between the last added point and the current point
     distance = haversine(lat1, lon1, lat2, lon2)
@@ -56,18 +63,17 @@ for i in range(1, len(points)):
         fraction = fixed_distance / distance
         lat1, lon1 = interpolate(lat1, lon1, lat2, lon2, fraction)
         
-        # Calculate the distance to the next point
-        next_distance = haversine(lat1, lon1, lat2, lon2)
+        # Add the new point with updated distance traveled
+        dist_travel1 += fixed_distance
+        new_points.append((shape_id1, lat1, lon1, dist_travel1))
+        print(f"Added new interpolated point: ({lat1:.6f}, {lon1:.6f}) with dist_travel={dist_travel1:.2f}")
         
-        # Only add the new point if it's appropriately spaced from the previous one
-        if next_distance >= fixed_distance:
-            new_points.append((lat1, lon1))
-            print(f"Added new interpolated point: ({lat1:.6f}, {lon1:.6f})")
-        distance = next_distance
+        # Recalculate the remaining distance to the next point
+        distance = haversine(lat1, lon1, lat2, lon2)
     
-    # Add the final point of this segment if it hasn't been added already
-    if distance > 0 and distance >= fixed_distance:
-        new_points.append((lat2, lon2))
+    # Add the final point of this segment if it hasn't been added yet
+    if distance > 0:
+        new_points.append((shape_id2, lat2, lon2, dist_travel2))
         print(f"Added endpoint: ({lat2:.6f}, {lon2:.6f})")
 
 # Write the new shape points back to the same CSV file
@@ -77,8 +83,8 @@ try:
         writer = csv.writer(outfile)
         writer.writerow(['shape_id', 'shape_pt_lat', 'shape_pt_lon', 'shape_pt_sequence', 'shape_dist_traveled'])
         
-        for i, (lat, lon) in enumerate(new_points):
-            writer.writerow([f'new_shape_id', lat, lon, i + 1, i * fixed_distance])
+        for i, (shape_id, lat, lon, dist_travel) in enumerate(new_points):
+            writer.writerow([shape_id, lat, lon, i + 1, dist_travel])
             print(f"Written point {i+1}: ({lat:.6f}, {lon:.6f})")
 
     print(f"New shape points successfully written to '{input_file}'")

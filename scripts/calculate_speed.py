@@ -22,7 +22,7 @@ def interpolate(lat1, lon1, lat2, lon2, fraction):
     return lat, lon
 
 # Load the road points CSV
-input_file = '../includes/gtfs_Route_38.csv'
+input_file = '../includes/gtfs_route_38_35.csv'
 df = pd.read_csv(input_file)
 
 # Convert the DataFrame to a list of tuples for processing
@@ -65,7 +65,7 @@ with open(input_file, mode='w', newline='') as outfile:
 print(f"New shape points successfully written to '{input_file}'")
 
 # Load the stop times CSV file into a DataFrame
-stop_times_file = '../includes/stop_times_single_Route38.csv'
+stop_times_file = '../includes/route38_35_bus_times.csv'
 df_stops = pd.read_csv(stop_times_file)
 
 # Function to convert time strings (HH:MM:SS) to total seconds

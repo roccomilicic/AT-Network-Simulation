@@ -60,7 +60,7 @@ global {
 				point next_location <- point(to_GAMA_CRS(next_coordinate));
 
 				// Link the 2 stops together
-				next_road_link <- line(next_location, next_location);
+				//next_road_link <- line(next_location, next_location);
 			}
 
 		}
