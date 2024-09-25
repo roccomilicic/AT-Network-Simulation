@@ -89,10 +89,15 @@ global {
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
 					trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
-					loop x from: 0 to: route_38_trip_matrix.rows - 1 {
-						add route_38_trip_matrix[2, x] to: stop_departure_times;
+					loop x from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
+						if (route_38_multiple_trip_matrix[12, x] = "True") {
+							break;
+						} else{ 
+							add route_38_trip_matrix[2, x] to: stop_departure_times;
 						add route_38_trip_matrix[1, x] to: stop_arrival_times;
 						add route_38_trip_matrix[10, x] to: bus_speeds;
+						}
+						
 					}
 
 				}
@@ -152,38 +157,51 @@ species bus skills: [moving] {
 	list<float> bus_speeds;
 	int bus_stop <- 0;
 	float speed_to_next_stop;
+	bool has_reached_end <- false; // New flag to track if a bus has reached the last stop
 
 	reflex myfollow {
-		if (cycle < 2580) {
-			loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-				speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
-				//write "\nCURRENT STOP: " + bus_stop;
-				if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
-					bus_stop <- bus_stop + 1; // Incremenet bus stop number
-					speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
-					write "\n at bus stop " + bus_stop;
-					//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
-					//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
+		// Only continue if the bus hasn't reached the end
+		if (not has_reached_end) {
+			// Ensure we are within bounds for bus_stops and bus_speeds
+			if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 
+				// Multiply speed by 310 to get the correct speed
+				speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
+
+				// Debugging check to ensure the bus is moving
+				write "\nBus ID: " + self + " at bus stop: " + bus_stop + " with speed: " + speed_to_next_stop;
+				write "\nBus ID: " + self + " Departure time: " + (stop_departure_times at bus_stop) + " Current time: " + string(current_date, " HH:mm:ss");
+
+				// Check if the current time matches the departure time for the current stop
+				if string(current_date, " HH:mm:ss") = " " + stop_departure_times at bus_stop {
+					bus_stop <- bus_stop + 1; // Increment bus stop number
+					
+					// Check if bus_stop is still within bounds after incrementing
+					if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
+						// Update speed for the next stop
+						speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
+						write "\nBus ID: " + self + " has moved to bus stop " + bus_stop;
+					} else {
+						// If out of bounds, freeze the bus at the last stop
+						write "\nBus ID: " + self + " has reached the last stop and is now frozen.";
+						speed_to_next_stop <- 0.0;
+						has_reached_end <- true; // Mark the bus as having reached the last stop
+					}
+				} else {
+					write "\nBus ID: " + self + " is waiting for departure time.";
 				}
 
-				do follow speed: speed_to_next_stop path: path_following; // follow the path with given speed for current bus stop
-
+				// Continue following the path with the current speed
+				do follow speed: speed_to_next_stop path: path_following;
+			} else {
+				// If out of bounds, stop the bus (freeze)
+				do follow speed: 0.0 path: path_following;
+				has_reached_end <- true; // Mark as having reached the end
 			}
-
+		} else {
+			// The bus has already reached the last stop and should be frozen
+			do follow speed: 0.0 path: path_following;
 		}
-
-		do follow speed: 0.0 path: path_following;
-
-		/*loop while: bus_stop != route_38_stops.rows - 1{
-			float speed_to_next_stop <- bus_speeds at bus_stop;
-			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
-				bus_stop <- bus_stop + 1; // Incremenet bus stop number
-				}
-			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
-			
-		}*/
-//do follow path: path_following speed: 0.0;
 	}
 
 	aspect base {
@@ -191,10 +209,10 @@ species bus skills: [moving] {
 		loop seg over: path_following.edges {
 			draw seg color: color;
 		}
-
 	}
-
 }
+
+
 
 species clock {
 	date current_date update: date(cycle * step);

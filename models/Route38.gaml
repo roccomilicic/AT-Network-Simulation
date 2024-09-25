@@ -150,10 +150,17 @@ species bus skills: [moving] {
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
 	list<float> bus_speeds;
+	int count;
 
 	reflex myfollow {
 		int bus_stop <- 0;
-		loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
+		count <- 0;
+		loop i from: 0 to: length(route_38_trip_matrix[10])
+		{
+			write "" + count;
+			count <- count + 1;
+		}
+		loop i from: 0 to: length(route_38_trip_matrix[10]) - 2 { // Each route point within the route (makes up the road)
 			float speed_to_next_stop <- bus_speeds at bus_stop * 0.79; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
