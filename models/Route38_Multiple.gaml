@@ -164,8 +164,8 @@ species bus skills: [moving] {
 		write "\nBus ID: " + self + " - has_reached_end: " + has_reached_end + " - bus_stop: " + bus_stop;
 		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
-			write "\nBus ID: " + self + " at bus stop: " + bus_stop + " with speed: " + speed_to_next_stop;
-			write "\nBus ID: " + self + " Departure time: " + (stop_departure_times at bus_stop) + " Current time: " + string(current_date, "HH:mm:ss");
+			//write "\nBus ID: " + self + " at bus stop: " + bus_stop + " with speed: " + speed_to_next_stop;
+			//write "\nBus ID: " + self + " Departure time: " + (stop_departure_times at bus_stop) + " Current time: " + string(current_date, "HH:mm:ss");
 
 			// Check if the current time matches or exceeds the departure time
 			if (string(current_date, "HH:mm:ss") >= (stop_departure_times at bus_stop)) {
@@ -189,6 +189,7 @@ species bus skills: [moving] {
 			do follow speed: speed_to_next_stop path: path_following;
 		} else {
 			write "\nBus ID: " + self + " is out of bounds for stops or speeds.";
+			do follow speed: speed_to_next_stop path: path_following;
 		}
 
 	}
