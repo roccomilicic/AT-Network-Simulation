@@ -25,6 +25,8 @@ global {
 	string first_departure_time <- route_38_trip_matrix[2, 0];
 	list<string> bus_start_times <- [];
 	int next_bus_index <- 0; // Index to keep track of the next bus to create
+	list<int> bus_start_times_index <- [];
+
 	init {
 		create clock {
 			current_date <- starting_date;
@@ -71,6 +73,7 @@ global {
 		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
 			if (route_38_multiple_trip_matrix[11, i] = "True") {
 				add route_38_multiple_trip_matrix[2, i] to: bus_start_times;
+				add i to: bus_start_times_index;
 			}
 
 		}
@@ -81,21 +84,31 @@ global {
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");
 			string next_start_time <- bus_start_times at next_bus_index;
-			write "Next start time: " + next_start_time;
-			if (current_time >= next_start_time) {
+
+			// Only create a bus when the current time matches the next bus's start time
+			if (current_time = next_start_time) {
 				create bus {
+				// Initialize the bus with its starting coordinates and stop details
 					float starting_lon <- route_38_roads[2, 1];
 					float starting_lat <- route_38_roads[1, 1];
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
-					trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
-					loop x from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
+					trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of this bus agent
+
+					// Initialize the bus's stop-related data uniquely for each bus
+					bus_stop <- 0; // Start from the first stop
+					stop_departure_times <- []; // Empty list for each bus
+					stop_arrival_times <- []; // Empty list for each bus
+					bus_speeds <- []; // Empty list for each bus
+					int s <- bus_start_times_index[next_bus_index];
+					// Fill the bus-specific stop and speed data
+					loop x from: s to: route_38_multiple_trip_matrix.rows - 1 {
 						if (route_38_multiple_trip_matrix[12, x] = "True") {
 							break;
 						} else {
-							add route_38_trip_matrix[2, x] to: stop_departure_times;
-							add route_38_trip_matrix[1, x] to: stop_arrival_times;
-							add route_38_trip_matrix[10, x] to: bus_speeds;
+							add route_38_multiple_trip_matrix[2, x] to: stop_departure_times; // Departure times
+							add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times; // Arrival times
+							add route_38_multiple_trip_matrix[10, x] to: bus_speeds; // Bus speeds
 						}
 
 					}
@@ -161,11 +174,11 @@ species bus skills: [moving] {
 
 	reflex myfollow {
 	// Print the current state of the bus
-		write "\nBus ID: " + self + " - has_reached_end: " + has_reached_end + " - bus_stop: " + bus_stop;
+	//write "\nBus ID: " + self + " - has_reached_end: " + has_reached_end + " - bus_stop: " + bus_stop;
+
+	// Check if the bus has more stops to go to
 		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
-			//write "\nBus ID: " + self + " at bus stop: " + bus_stop + " with speed: " + speed_to_next_stop;
-			//write "\nBus ID: " + self + " Departure time: " + (stop_departure_times at bus_stop) + " Current time: " + string(current_date, "HH:mm:ss");
 
 			// Check if the current time matches or exceeds the departure time
 			if (string(current_date, "HH:mm:ss") >= (stop_departure_times at bus_stop)) {
@@ -174,21 +187,22 @@ species bus skills: [moving] {
 				// Check bounds and update speed
 				if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 					speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
-					write "\nBus ID: " + self + " has moved to bus stop " + bus_stop;
+					//write "\nBus ID: " + self + " has moved to bus stop " + bus_stop;
 				} else {
 				// This bus has reached the last stop
-					write "\nBus ID: " + self + " has reached the last stop and is now frozen.";
-					has_reached_end <- true; // Mark this bus as finished
+					write "\nBus ID: " + self + " has reached the last stop and will be deleted.";
+					has_reached_end <- true; // Mark this bus as finished, set the flag before dying
 				}
 
-			} else {
-				write "\nBus ID: " + self + " is waiting for departure time.";
 			}
-
 			// Continue following the path with the calculated speed
 			do follow speed: speed_to_next_stop path: path_following;
+		} else if (has_reached_end) {
+		// Only delete this bus when it has reached the last stop
+		//write "\nBus ID: " + self + " is being deleted.";
+			do die;
 		} else {
-			write "\nBus ID: " + self + " is out of bounds for stops or speeds.";
+		//write "\nBus ID: " + self + " is out of bounds for stops or speeds.";
 			do follow speed: speed_to_next_stop path: path_following;
 		}
 
