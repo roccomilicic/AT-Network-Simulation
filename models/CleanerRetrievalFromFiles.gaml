@@ -63,7 +63,7 @@ global{
 			string shape_id_next <- roads[0, row + 1];
 
 			// Create road species based on collected route_38_roads from CSV
-			create road {
+			create road returns: list_roads{
 			// Lon and lat values for current point 
 				
 				if (shape_id = shape_id_next) {
@@ -115,20 +115,27 @@ global{
 		}
 		
 		//the_graph <- as_edge_graph(road); // Create graph for all road points
+		
+		//loops through routes file
 		loop row from: 1 to: routes.rows - 1 {
+			//current route is set based on the current row in loop
 			string current_route <- routes[3, row];
 			string current_route_id <- routes[0, row];
 			add current_route to: graph_names;
+			graph current_graph;
 			
 			bool trip_found <- false;
 			int trip_row <- 1;
 			string route_shape_id;
+			bool roads_done <- false;
+			bool first_road_found <- false;
 			
+			//finds a trip for the current route
 			loop while: trip_found = false {
-				if(trips_matrix[trip_row, 0] = current_route_id)
+				if(trips_matrix[0, trip_row] = current_route_id)
 				{
 					trip_found <- true;
-					route_shape_id <- trips_matrix[trip_row, 7];
+					route_shape_id <- trips_matrix[7, trip_row];
 				}
 				else
 				{
@@ -136,14 +143,64 @@ global{
 				}
 			}
 			
-			road current_road;
-			
-			
-			
+			loop agt over: road {
+				
+				if(agt.road_shape_id = route_shape_id)
+				{
+					if(first_road_found = false)
+					{
+						current_graph <- as_edge_graph(agt);
+						first_road_found <- true;
+					}
+					else
+					{
+						current_graph << edge(agt);
+					}
+				}
+			}
+			add current_graph to: graphs;
 		}
 		
+		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
+			if (route_38_multiple_trip_matrix[11, i] = "True") {
+				add route_38_multiple_trip_matrix[2, i] to: bus_start_times;
+			}
+
+		}
 	
 	}
+	reflex check_bus_creation {
+		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
+			string current_time <- string(current_date, "HH:mm:ss");
+			string next_start_time <- bus_start_times at next_bus_index;
+			//write "Next start time: " + next_start_time;
+			if (current_time >= next_start_time) {
+				create bus {
+					float starting_lon <- roads[2, 1];
+					float starting_lat <- roads[1, 1];
+					coordinate <- point({starting_lon, starting_lat});
+					location <- point(to_GAMA_CRS(coordinate));
+					path_following <- graphs at 0;
+					trip_id <- trips_matrix[2, 0]; // Get the trip ID of bus agent
+					loop x from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
+						add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
+						add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
+						add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+					}
+
+				}
+
+				// Move to the next bus in the list
+				next_bus_index <- next_bus_index + 1;
+			}
+
+		} else {
+			stop check_bus_creation; // Stop checking when all buses are created
+		}
+
+	}
+	
+	
 }
 
 
@@ -190,7 +247,7 @@ species road {
 
 species bus skills: [moving] {
 	point coordinate;
-	path path_following <- list(the_graph) as_path the_graph;
+	path path_following; //<- list(the_graph) as_path the_graph;
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
