@@ -115,9 +115,10 @@ global{
 		}
 		
 		//the_graph <- as_edge_graph(road); // Create graph for all road points
-		
+		write routes[3, 0];
+		write routes[3, 1];
 		//loops through routes file
-		loop row from: 1 to: routes.rows - 1 {
+		loop row from: 0 to: routes.rows - 1{
 			//current route is set based on the current row in loop
 			string current_route <- routes[3, row];
 			string current_route_id <- routes[0, row];
@@ -125,7 +126,7 @@ global{
 			graph current_graph;
 			
 			bool trip_found <- false;
-			int trip_row <- 1;
+			int trip_row <- 0;
 			string route_shape_id;
 			bool roads_done <- false;
 			bool first_road_found <- false;
@@ -136,6 +137,9 @@ global{
 				{
 					trip_found <- true;
 					route_shape_id <- trips_matrix[7, trip_row];
+					write trip_found;
+					write route_shape_id;
+					write current_route;
 				}
 				else
 				{
@@ -160,6 +164,10 @@ global{
 			}
 			add current_graph to: graphs;
 		}
+		write "first road in graph 0";
+		write first(graphs at 0);
+		write "first road in graph 1";
+		write first(graphs at 1);
 		
 		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
 			if (route_38_multiple_trip_matrix[11, i] = "True") {
@@ -180,7 +188,9 @@ global{
 					float starting_lat <- roads[1, 1];
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
-					path_following <- graphs at 0;
+					graph bus_graph <- graphs at 0;
+					path_following <- list(bus_graph) as_path bus_graph;
+					write list(bus_graph) as_path bus_graph;
 					trip_id <- trips_matrix[2, 0]; // Get the trip ID of bus agent
 					loop x from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
 						add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
