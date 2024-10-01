@@ -1,0 +1,3 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,route_sort_order,contract_id
+38-221,GBT,38,38,,3,,,,,60
+35-205,HE,35,35,,3,,,,,53
