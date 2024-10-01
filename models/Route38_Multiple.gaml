@@ -8,6 +8,7 @@ global {
 	file route_38_trip <- csv_file("../includes/stop_times_single_Route38.csv");
 	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
 	graph the_graph;
+	graph the_graph_reversed;
 	geometry shape <- envelope(route_38_bounds);
 
 	// Variables for the clock species
@@ -25,6 +26,8 @@ global {
 	string first_departure_time <- route_38_trip_matrix[2, 0];
 	list<string> bus_start_times <- [];
 	int next_bus_index <- 0; // Index to keep track of the next bus to create
+	list<int> bus_start_times_index <- [];
+
 	init {
 		create clock {
 			current_date <- starting_date;
@@ -65,34 +68,55 @@ global {
 
 		}
 
-		the_graph <- as_edge_graph(road); // Create graph for all road points
-
+		the_graph <- directed(as_edge_graph(road)); // Create graph for all road points
+		
 		// Populate bus_start_times with start times from the matrix (where the first stop is true)
 		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
 			if (route_38_multiple_trip_matrix[11, i] = "True") {
 				add route_38_multiple_trip_matrix[2, i] to: bus_start_times;
+				add i to: bus_start_times_index;
 			}
 
 		}
+		
+		the_graph_reversed <- reverse(the_graph);
 
 	}
+	
+	
 
-		reflex check_bus_creation {
+	reflex check_bus_creation {
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");
 			string next_start_time <- bus_start_times at next_bus_index;
-			//write "Next start time: " + next_start_time;
-			if (current_time >= next_start_time) {
+
+			// Only create a bus when the current time matches the next bus's start time
+			if (current_time = next_start_time) {
 				create bus {
+				// Initialize the bus with its starting coordinates and stop details
 					float starting_lon <- route_38_roads[2, 1];
 					float starting_lat <- route_38_roads[1, 1];
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
-					trip_id <- all_bus_trips_matrix[2, 0]; // Get the trip ID of bus agent
-					loop x from: 0 to: route_38_trip_matrix.rows - 1 {
-						add route_38_trip_matrix[2, x] to: stop_departure_times;
-						add route_38_trip_matrix[1, x] to: stop_arrival_times;
-						add route_38_trip_matrix[10, x] to: bus_speeds;
+					trip_id <- all_bus_trips_matrix[2, 0];
+
+					// Initialize the bus's stop-related data uniquely for each bus
+					bus_stop <- 0;
+					stop_departure_times <- [];
+					stop_arrival_times <- [];
+					bus_speeds <- [];
+					int start_index <- bus_start_times_index[next_bus_index];
+					
+					// Fill the bus-specific stop and speed data
+					loop x from: start_index to: route_38_multiple_trip_matrix.rows - 1 {
+						if (route_38_multiple_trip_matrix[12, x] = "True") {
+							break;
+						} else {
+							add route_38_multiple_trip_matrix[2, x] to: stop_departure_times; 
+							add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
+							add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+						}
+
 					}
 
 				}
@@ -152,38 +176,38 @@ species bus skills: [moving] {
 	list<float> bus_speeds;
 	int bus_stop <- 0;
 	float speed_to_next_stop;
+	bool has_reached_end <- false;
 
 	reflex myfollow {
-		if (cycle < 2580) {
-			loop i from: 0 to: length(route_38_stops) - 1 { // Each route point within the route (makes up the road)
-				speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
-				//write "\nCURRENT STOP: " + bus_stop;
-				if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
-					bus_stop <- bus_stop + 1; // Incremenet bus stop number
-					speed_to_next_stop <- (bus_speeds at bus_stop) * 0.77; // Save speed of bus depending on arrival stop
-					write "\n at bus stop " + bus_stop;
-					//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
-					//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
 
+		// Check if the bus has more stops to go to
+		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
+			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
+
+			// Check if the current time matches or exceeds the departure time
+			if (string(current_date, "HH:mm:ss") >= (stop_departure_times at bus_stop)) {
+				bus_stop <- bus_stop + 1;
+
+				// Check if the bus has more stops to go to
+				if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
+					speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
+					
+				} else {
+					// This bus has reached the last stop
+					write "\nBus ID: " + self + " has reached the last stop and will be deleted.";
+					has_reached_end <- true;
 				}
-
-				do follow speed: speed_to_next_stop path: path_following; // follow the path with given speed for current bus stop
 
 			}
-
+			// Continue following the path with the calculated speed
+			do follow speed: speed_to_next_stop path: path_following;
+		} else if (has_reached_end) {
+			// Only delete this bus when it has reached the last stop
+			do die;
+		} else {
+			do follow speed: speed_to_next_stop path: path_following;
 		}
 
-		do follow speed: 0.0 path: path_following;
-
-		/*loop while: bus_stop != route_38_stops.rows - 1{
-			float speed_to_next_stop <- bus_speeds at bus_stop;
-			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
-				bus_stop <- bus_stop + 1; // Incremenet bus stop number
-				}
-			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
-			
-		}*/
-//do follow path: path_following speed: 0.0;
 	}
 
 	aspect base {
