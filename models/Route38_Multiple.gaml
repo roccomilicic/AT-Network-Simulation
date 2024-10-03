@@ -27,6 +27,7 @@ global {
 	list<string> bus_start_times <- [];
 	int next_bus_index <- 0; // Index to keep track of the next bus to create
 	list<int> bus_start_times_index <- [];
+	bool reversed;
 
 	init {
 		create clock {
@@ -69,7 +70,7 @@ global {
 		}
 
 		the_graph <- directed(as_edge_graph(road)); // Create graph for all road points
-		
+
 		// Populate bus_start_times with start times from the matrix (where the first stop is true)
 		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
 			if (route_38_multiple_trip_matrix[11, i] = "True") {
@@ -78,55 +79,64 @@ global {
 			}
 
 		}
-		
+
 		the_graph_reversed <- reverse(the_graph);
-
 	}
-	
-	
 
-	reflex check_bus_creation {
+	reflex check_bus_departure {
+	// Check if the current time matches the next bus's start time
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");
 			string next_start_time <- bus_start_times at next_bus_index;
 
-			// Only create a bus when the current time matches the next bus's start time
+			// Only proceed to create a bus if the current time matches the next bus's start time
 			if (current_time = next_start_time) {
-				create bus {
-				// Initialize the bus with its starting coordinates and stop details
-					float starting_lon <- route_38_roads[2, 1];
-					float starting_lat <- route_38_roads[1, 1];
-					coordinate <- point({starting_lon, starting_lat});
-					location <- point(to_GAMA_CRS(coordinate));
-					trip_id <- all_bus_trips_matrix[2, 0];
+			// Call the bus creation function when the time matches
+				do create_bus;
+			}
 
-					// Initialize the bus's stop-related data uniquely for each bus
-					bus_stop <- 0;
-					stop_departure_times <- [];
-					stop_arrival_times <- [];
-					bus_speeds <- [];
-					int start_index <- bus_start_times_index[next_bus_index];
-					
-					// Fill the bus-specific stop and speed data
-					loop x from: start_index to: route_38_multiple_trip_matrix.rows - 1 {
-						if (route_38_multiple_trip_matrix[12, x] = "True") {
-							break;
-						} else {
-							add route_38_multiple_trip_matrix[2, x] to: stop_departure_times; 
-							add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
-							add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
-						}
+		} else {
+		// Stop this reflex if all buses are created
+			stop check_bus_departure;
+		}
 
+	}
+
+	action create_bus {
+	// Ensure the next bus index is within the start times array
+		if (next_bus_index < length(bus_start_times)) {
+		// Create the bus object and initialize its data
+			create bus {
+			// Initialize the bus with its starting coordinates and stop details
+				float starting_lon <- route_38_roads[2, 1];
+				float starting_lat <- route_38_roads[1, 1];
+				coordinate <- point({starting_lon, starting_lat});
+				location <- point(to_GAMA_CRS(coordinate));
+				trip_id <- all_bus_trips_matrix[2, 0];
+
+				// Initialize the bus's stop-related data uniquely for each bus
+				bus_stop <- 0;
+				stop_departure_times <- [];
+				stop_arrival_times <- [];
+				bus_speeds <- [];
+				int start_index <- bus_start_times_index[next_bus_index];
+
+				// Fill the bus-specific stop and speed data
+				loop x from: start_index to: route_38_multiple_trip_matrix.rows - 1 {
+					if (route_38_multiple_trip_matrix[12, x] = "True") {
+						break;
+					} else {
+						add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
+						add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
+						add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
 					}
 
 				}
 
-				// Move to the next bus in the list
-				next_bus_index <- next_bus_index + 1;
 			}
 
-		} else {
-			stop check_bus_creation; // Stop checking when all buses are created
+			// Move to the next bus in the list
+			next_bus_index <- next_bus_index + 1;
 		}
 
 	}
@@ -180,7 +190,7 @@ species bus skills: [moving] {
 
 	reflex myfollow {
 
-		// Check if the bus has more stops to go to
+	// Check if the bus has more stops to go to
 		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
 
@@ -188,25 +198,29 @@ species bus skills: [moving] {
 			if (string(current_date, "HH:mm:ss") >= (stop_departure_times at bus_stop)) {
 				bus_stop <- bus_stop + 1;
 
-				// Check if the bus has more stops to go to
-				if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
-					speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
-					
-				} else {
-					// This bus has reached the last stop
+				//				// Check if the bus has more stops to go to
+				//				if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
+				//					speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
+				//				}
+				if bus_stop = length(bus_speeds) and bus_stop = length(stop_departure_times) {
+				// This bus has reached the last stop
 					write "\nBus ID: " + self + " has reached the last stop and will be deleted.";
-					has_reached_end <- true;
+					//					has_reached_end <- true;
+					do die;
+				} else {
+					do follow speed: speed_to_next_stop path: path_following;
 				}
 
 			}
 			// Continue following the path with the calculated speed
 			do follow speed: speed_to_next_stop path: path_following;
-		} else if (has_reached_end) {
-			// Only delete this bus when it has reached the last stop
-			do die;
-		} else {
-			do follow speed: speed_to_next_stop path: path_following;
 		}
+		// if (has_reached_end) {
+		//		// Only delete this bus when it has reached the last stop
+		//			do die;
+		//		} else {
+		//			do follow speed: speed_to_next_stop path: path_following;
+		//		}
 
 	}
 
