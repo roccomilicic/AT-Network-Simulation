@@ -27,7 +27,6 @@ global {
 	list<string> bus_start_times <- [];
 	int next_bus_index <- 0; // Index to keep track of the next bus to create
 	list<int> bus_start_times_index <- [];
-	bool reversed;
 
 	init {
 		create clock {
@@ -106,29 +105,50 @@ global {
 	// Ensure the next bus index is within the start times array
 		if (next_bus_index < length(bus_start_times)) {
 		// Create the bus object and initialize its data
-			create bus {
-			// Initialize the bus with its starting coordinates and stop details
-				float starting_lon <- route_38_roads[2, 1];
-				float starting_lat <- route_38_roads[1, 1];
-				coordinate <- point({starting_lon, starting_lat});
-				location <- point(to_GAMA_CRS(coordinate));
-				trip_id <- all_bus_trips_matrix[2, 0];
-
-				// Initialize the bus's stop-related data uniquely for each bus
-				bus_stop <- 0;
-				stop_departure_times <- [];
-				stop_arrival_times <- [];
-				bus_speeds <- [];
-				int start_index <- bus_start_times_index[next_bus_index];
-
-				// Fill the bus-specific stop and speed data
-				loop x from: start_index to: route_38_multiple_trip_matrix.rows - 1 {
-					if (route_38_multiple_trip_matrix[12, x] = "True") {
-						break;
+			loop i from: 0 to: 1 {
+			// In this case int 0 represents the bus moving one direction, and int 1 in the other direction
+				create bus {
+				// Initialize the bus with its starting coordinates and stop details
+					if (i = 0) {
+						float starting_lon <- route_38_roads[2, 1];
+						float starting_lat <- route_38_roads[1, 1];
+						coordinate <- point({starting_lon, starting_lat});
+						location <- point(to_GAMA_CRS(coordinate));
 					} else {
-						add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
-						add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
-						add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+						float starting_lon <- reverse(route_38_roads[2, 1]);
+						float starting_lat <- reverse(route_38_roads[1, 1]);
+						coordinate <- point({starting_lon, starting_lat});
+						location <- point(to_GAMA_CRS(coordinate));
+					}
+
+					trip_id <- all_bus_trips_matrix[2, 0];
+
+					// Initialize the bus's stop-related data uniquely for each bus
+					bus_stop <- 0;
+					stop_departure_times <- [];
+					stop_arrival_times <- [];
+					bus_speeds <- [];
+					int start_index <- bus_start_times_index[next_bus_index];
+
+					// Fill the bus-specific stop and speed data
+					loop x from: start_index to: route_38_multiple_trip_matrix.rows - 1 {
+						if (route_38_multiple_trip_matrix[12, x] = "True") {
+							break;
+						} else {
+							if (i = 0) {
+								add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
+								add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
+								add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+								reversed <- false;
+							} else {
+								add reverse(route_38_multiple_trip_matrix[2, x]) to: stop_departure_times;
+								add reverse(route_38_multiple_trip_matrix[1, x]) to: stop_arrival_times;
+								add reverse(route_38_multiple_trip_matrix[10, x]) to: bus_speeds;
+								reversed <- true;
+							}
+
+						}
+
 					}
 
 				}
@@ -179,7 +199,9 @@ species road {
 
 species bus skills: [moving] {
 	point coordinate;
-	path path_following <- list(the_graph) as_path the_graph;
+	path bus_path <- list(the_graph) as_path the_graph;
+	path bus_path_reverse <- list(the_graph_reversed) as_path the_graph_reversed;
+	path path_following;
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
@@ -187,9 +209,12 @@ species bus skills: [moving] {
 	int bus_stop <- 0;
 	float speed_to_next_stop;
 	bool has_reached_end <- false;
+	bool reversed;
 
+	
 	reflex myfollow {
 
+					//					has_reached_end <- true;
 	// Check if the bus has more stops to go to
 		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
@@ -208,12 +233,12 @@ species bus skills: [moving] {
 					//					has_reached_end <- true;
 					do die;
 				} else {
-					do follow speed: speed_to_next_stop path: path_following;
+					do follow speed: speed_to_next_stop path: bus_path;
 				}
 
 			}
 			// Continue following the path with the calculated speed
-			do follow speed: speed_to_next_stop path: path_following;
+			do follow speed: speed_to_next_stop path: bus_path;
 		}
 		// if (has_reached_end) {
 		//		// Only delete this bus when it has reached the last stop
