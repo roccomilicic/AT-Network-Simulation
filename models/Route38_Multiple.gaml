@@ -17,6 +17,7 @@ global {
 
 	// Route matrixes for CSV route_38_roads
 	matrix route_38_roads <- matrix(route_38_road_csv);
+	matrix route_38_roads_reversed <- reverse(route_38_roads);
 	matrix route_38_stops <- matrix(route_38_stops_csv);
 
 	// Bus routes
@@ -100,6 +101,8 @@ global {
 		}
 
 	}
+	
+	
 
 	action create_bus {
 	// Ensure the next bus index is within the start times array
@@ -112,13 +115,16 @@ global {
 					if (i = 0) {
 						float starting_lon <- route_38_roads[2, 1];
 						float starting_lat <- route_38_roads[1, 1];
+						write "start lon: " +  starting_lon;
 						coordinate <- point({starting_lon, starting_lat});
 						location <- point(to_GAMA_CRS(coordinate));
 					} else {
-						float starting_lon <- reverse(route_38_roads[2, 1]);
-						float starting_lat <- reverse(route_38_roads[1, 1]);
+						float starting_lon <- route_38_roads_reversed[route_38_roads.rows -1 , 2];
+						float starting_lat <- route_38_roads_reversed[route_38_roads.rows -1, 1];
+						write "start rev lon: " +  starting_lon;
 						coordinate <- point({starting_lon, starting_lat});
 						location <- point(to_GAMA_CRS(coordinate));
+						write "point: " + route_38_roads_reversed[0, 3];
 					}
 
 					trip_id <- all_bus_trips_matrix[2, 0];
@@ -144,7 +150,7 @@ global {
 								bus_color <- #blue;
 								//bus_path <- list(the_graph) as_path the_graph;
 								//write "\nBus ID: " + self + " is noromal.";
-								write "\nBus ID: " + self + " reversed";
+								//write "\nBus ID: " + self + " reversed";
 							} else {
 							//								add reverse(route_38_multiple_trip_matrix[2, x]) to: stop_departure_times;
 							//								add reverse(route_38_multiple_trip_matrix[1, x]) to: stop_arrival_times;
