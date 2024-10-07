@@ -140,11 +140,25 @@ global {
 								add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
 								add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
 								reversed <- false;
+								bus_path <- list(the_graph) as_path the_graph;
+								bus_color <- #blue;
+								//bus_path <- list(the_graph) as_path the_graph;
+								//write "\nBus ID: " + self + " is noromal.";
+								write "\nBus ID: " + self + " reversed";
 							} else {
-								add reverse(route_38_multiple_trip_matrix[2, x]) to: stop_departure_times;
-								add reverse(route_38_multiple_trip_matrix[1, x]) to: stop_arrival_times;
-								add reverse(route_38_multiple_trip_matrix[10, x]) to: bus_speeds;
+							//								add reverse(route_38_multiple_trip_matrix[2, x]) to: stop_departure_times;
+							//								add reverse(route_38_multiple_trip_matrix[1, x]) to: stop_arrival_times;
+							//								add reverse(route_38_multiple_trip_matrix[10, x]) to: bus_speeds;
+								add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
+								add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
+								add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+								
+								bus_path <- reverse(list(the_graph)) as_path the_graph;
 								reversed <- true;
+								bus_color <- #green;
+								//write "\nBus ID: " + self + " is reversed.";
+								//write "\nBus ID: " + self + " reversed";
+								//bus_path <- reverse(list(the_graph)) as_path the_graph;
 							}
 
 						}
@@ -199,8 +213,8 @@ species road {
 
 species bus skills: [moving] {
 	point coordinate;
-	path bus_path <- list(the_graph) as_path the_graph;
-	path bus_path_reverse <- list(the_graph_reversed) as_path the_graph_reversed;
+	//path bus_path <- list(the_graph) as_path the_graph;
+	path bus_path;
 	path path_following;
 	string trip_id;
 	list<string> stop_departure_times;
@@ -210,11 +224,13 @@ species bus skills: [moving] {
 	float speed_to_next_stop;
 	bool has_reached_end <- false;
 	bool reversed;
+	rgb bus_color;
 
-	
 	reflex myfollow {
+	// Determine the path based on the reversed state
+	//write "\nBus ID: " + self + " is running.";
 
-					//					has_reached_end <- true;
+
 	// Check if the bus has more stops to go to
 		if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
 			speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
@@ -222,36 +238,23 @@ species bus skills: [moving] {
 			// Check if the current time matches or exceeds the departure time
 			if (string(current_date, "HH:mm:ss") >= (stop_departure_times at bus_stop)) {
 				bus_stop <- bus_stop + 1;
-
-				//				// Check if the bus has more stops to go to
-				//				if (bus_stop < length(bus_speeds) and bus_stop < length(stop_departure_times)) {
-				//					speed_to_next_stop <- (bus_speeds at bus_stop) * 310;
-				//				}
-				if bus_stop = length(bus_speeds) and bus_stop = length(stop_departure_times) {
+				if (bus_stop >= length(bus_speeds)) {
 				// This bus has reached the last stop
 					write "\nBus ID: " + self + " has reached the last stop and will be deleted.";
-					//					has_reached_end <- true;
 					do die;
-				} else {
-					do follow speed: speed_to_next_stop path: bus_path;
 				}
 
 			}
+
 			// Continue following the path with the calculated speed
 			do follow speed: speed_to_next_stop path: bus_path;
 		}
-		// if (has_reached_end) {
-		//		// Only delete this bus when it has reached the last stop
-		//			do die;
-		//		} else {
-		//			do follow speed: speed_to_next_stop path: path_following;
-		//		}
 
 	}
 
 	aspect base {
-		draw rectangle(0.0005, 0.001) color: #blue border: #black; // Draw the bus
-		loop seg over: path_following.edges {
+		draw rectangle(0.0008, 0.002) color: bus_color border: #black; // Draw the bus
+		loop seg over: bus_path.edges {
 			draw seg color: color;
 		}
 
