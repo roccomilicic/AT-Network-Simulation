@@ -89,7 +89,7 @@ global{
 				}
 				/* 
 				else {
-					shape_id <- shape_id_next;
+					//shape_id <- shape_id_next;
 					
 					road_shape_id <- shape_id;
 					
@@ -105,7 +105,7 @@ global{
 					lat_next <- lat2;
 
 					// Location for the next stop to put the beginning of the road on the map
-					point next_coordinate <- point({lon_next, lat_next});
+					point next_coordinate <- point({lon, lat});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 					
 				}*/
