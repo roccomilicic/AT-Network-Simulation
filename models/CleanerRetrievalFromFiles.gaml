@@ -64,6 +64,8 @@ global{
 
 			// Create road species based on collected route_38_roads from CSV
 			create road returns: list_roads{
+					lon <- lon1;
+					lat <- lat1;
 			// Lon and lat values for current point 
 				
 				if (shape_id = shape_id_next) {
@@ -85,7 +87,7 @@ global{
 					point next_coordinate <- point({lon_next, lat_next});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 				}
-				
+				/* 
 				else {
 					shape_id <- shape_id_next;
 					
@@ -106,7 +108,7 @@ global{
 					point next_coordinate <- point({lon_next, lat_next});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 					
-				}
+				}*/
 
 				// Link the 2 stops together
 				//next_road_link <- line(next_location, next_location);
@@ -188,7 +190,7 @@ global{
 					float starting_lat <- roads[1, 1];
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
-					graph bus_graph <- graphs at 0;
+					graph bus_graph <- graphs at 1;
 					path_following <- list(bus_graph) as_path bus_graph;
 					write list(bus_graph) as_path bus_graph;
 					trip_id <- trips_matrix[2, 0]; // Get the trip ID of bus agent
@@ -264,7 +266,7 @@ species bus skills: [moving] {
 	list<float> bus_speeds;
 
 	reflex myfollow {
-		int bus_stop <- 0;
+		/*int bus_stop <- 0;
 		loop i from: 0 to: length(stops) - 1 { // Each route point within the route (makes up the road)
 			float speed_to_next_stop <- bus_speeds at bus_stop * 0.53; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
@@ -276,9 +278,9 @@ species bus skills: [moving] {
 			}
 
 			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
-
-		}
-
+			
+		} */
+		do follow path: path_following;
 	}
 
 	aspect base {
