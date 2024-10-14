@@ -1,3 +1,8 @@
+/**
+* Name: Route_38_MultipleBuses
+* Model for visualizing multiple buses moving in both directions on a bus route based on a schedule. 
+*/
+
 model Route_38_MultipleBuses
 
 global {
