@@ -24,7 +24,7 @@ global{
 	list<string> graph_names; 
 	
 	//Bounds
-	geometry shape <- envelope(bounds);
+	geometry shape <-rectangle({175.46800, -36.2938}, {174.43080, -37.79270});
 
 	// Variables for the clock species
 	date starting_date <- date([2024, 8, 12, 4, 42, 0]);
