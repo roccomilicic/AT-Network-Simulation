@@ -16,7 +16,8 @@ global{
 	file roads_csv <- csv_file("../includes/gtfs_route_38_35.csv", ",");
 	file routes_csv <- csv_file("../includes/routes.csv");
 	file all_bus_trips <- csv_file("../includes/single_trip_Route38.csv");
-	file multiple_route_38_trips <- csv_file("../includes/stop_times_multiple_Route38.csv");
+	file route_38_trips <- csv_file("../includes/stop_times_single_Route38.csv");
+	file route_35_trips <- csv_file("../includes/stop_times_route35.csv");
 	
 	
 	//Graph for buses to follow
@@ -24,7 +25,7 @@ global{
 	list<string> graph_names; 
 	
 	//Bounds
-	geometry shape <- envelope(bounds);
+	geometry shape <- rectangle({174.76, -36.92}, {174.97, -37.01});
 
 	// Variables for the clock species
 	date starting_date <- date([2024, 8, 12, 4, 42, 0]);
@@ -39,10 +40,14 @@ global{
 
 	// Bus routes
 	matrix trips_matrix <- matrix(all_bus_trips);
-	matrix route_38_multiple_trip_matrix <- matrix(multiple_route_38_trips);
+	matrix route_38_trip_matrix <- matrix(route_38_trips);
+	matrix route_35_trip_matrix <- matrix(route_35_trips);
 	//string first_departure_time <- route_38_trip_matrix[2, 0];
-	list<string> bus_start_times <- [];
+	
+	list<string> bus38_start_times <- [];
+	list<string> bus35_start_times <- [];
 	int next_bus_index <- 0; // Index to keep track of the next bus to create
+	
 	init {
 		create clock {
 			current_date <- starting_date;
@@ -87,7 +92,7 @@ global{
 					point next_coordinate <- point({lon_next, lat_next});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 				}
-				/* 
+				
 				else {
 					//shape_id <- shape_id_next;
 					
@@ -108,7 +113,7 @@ global{
 					point next_coordinate <- point({lon, lat});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 					
-				}*/
+				}
 
 				// Link the 2 stops together
 				//next_road_link <- line(next_location, next_location);
@@ -171,41 +176,64 @@ global{
 		write "first road in graph 1";
 		write first(graphs at 1);
 		
-		loop i from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
-			if (route_38_multiple_trip_matrix[11, i] = "True") {
-				add route_38_multiple_trip_matrix[2, i] to: bus_start_times;
+		loop i from: 0 to: route_38_trip_matrix.rows - 1 {
+			if (route_38_trip_matrix[10, i] = "True") {
+				add route_38_trip_matrix[2, i] to: bus38_start_times;
 			}
-
 		}
-	
+		loop i from: 0 to: route_35_trip_matrix.rows - 1 {
+			if (route_35_trip_matrix[10, i] = "True") {
+				add route_35_trip_matrix[2, i] to: bus35_start_times;
+			}
+		}
 	}
+	
+	
 	reflex check_bus_creation {
-		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
+		if (next_bus_index < 2) { // create 2 buses - 1 for each route
 			string current_time <- string(current_date, "HH:mm:ss");
-			string next_start_time <- bus_start_times at next_bus_index;
+			//string next_start_time <- bus35_start_times at next_bus_index;
 			//write "Next start time: " + next_start_time;
-			if (current_time >= next_start_time) {
+			if (next_bus_index = 0) {
 				create bus {
 					float starting_lon <- roads[2, 1];
 					float starting_lat <- roads[1, 1];
 					coordinate <- point({starting_lon, starting_lat});
 					location <- point(to_GAMA_CRS(coordinate));
-					graph bus_graph <- graphs at 1;
+					graph bus_graph <- graphs at 0;
 					path_following <- list(bus_graph) as_path bus_graph;
 					write list(bus_graph) as_path bus_graph;
 					trip_id <- trips_matrix[2, 0]; // Get the trip ID of bus agent
-					loop x from: 0 to: route_38_multiple_trip_matrix.rows - 1 {
-						add route_38_multiple_trip_matrix[2, x] to: stop_departure_times;
-						add route_38_multiple_trip_matrix[1, x] to: stop_arrival_times;
-						add route_38_multiple_trip_matrix[10, x] to: bus_speeds;
+					loop x from: 0 to: route_38_trip_matrix.rows - 1 {
+						add route_38_trip_matrix[2, x] to: stop_departure_times;
+						add route_38_trip_matrix[1, x] to: stop_arrival_times;
+						add route_38_trip_matrix[10, x] to: bus_speeds;
 					}
 
 				}
+				
 
 				// Move to the next bus in the list
 				next_bus_index <- next_bus_index + 1;
 			}
+			else if(next_bus_index = 1) {
+				create bus {
+					float starting_lon <- roads[2, 3969];
+					float starting_lat <- roads[1, 3969];
+					coordinate <- point({starting_lon, starting_lat});
+					location <- point(to_GAMA_CRS(coordinate));
+					graph bus_graph <- graphs at 1;
+					path_following <- list(bus_graph) as_path bus_graph;
+					write list(bus_graph) as_path bus_graph;
+					trip_id <- trips_matrix[2, 1]; // Get the trip ID of bus agent
+					loop x from: 0 to: route_35_trip_matrix.rows - 1 {
+						add route_35_trip_matrix[2, x] to: stop_departure_times;
+						add route_35_trip_matrix[1, x] to: stop_arrival_times;
+						add route_35_trip_matrix[10, x] to: bus_speeds;
+					}
 
+				}
+				next_bus_index <- next_bus_index + 1;
 		} else {
 			stop check_bus_creation; // Stop checking when all buses are created
 		}
@@ -214,7 +242,7 @@ global{
 	
 	
 }
-
+}
 
 
 
@@ -266,7 +294,7 @@ species bus skills: [moving] {
 	list<float> bus_speeds;
 
 	reflex myfollow {
-		/*int bus_stop <- 0;
+		int bus_stop <- 0;
 		loop i from: 0 to: length(stops) - 1 { // Each route point within the route (makes up the road)
 			float speed_to_next_stop <- bus_speeds at bus_stop * 0.53; // Save speed of bus depending on arrival stop
 			//write "\nCURRENT STOP: " + bus_stop;
@@ -274,13 +302,16 @@ species bus skills: [moving] {
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
 				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
 				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
-
+				if (bus_stop >= length(stop_arrival_times)) { // When bus stop reaches last stop, die
+                    write "\nTrip ended for Bus ID: " + self + " at " + string(current_date, "HH:mm:ss");
+                    do die;
+                }
 			}
 
 			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
 			
-		} */
-		do follow path: path_following;
+		} 
+		//do follow path: path_following;
 	}
 
 	aspect base {
@@ -349,6 +380,5 @@ experiment main type: gui {
 	}
 
 }
-
 
 
