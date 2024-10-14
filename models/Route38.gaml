@@ -178,6 +178,7 @@ species bus skills: [moving] {
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
 	list<float> bus_speeds;
+	int count;
 
 	reflex myfollow {
 		int bus_stop <- 0;
