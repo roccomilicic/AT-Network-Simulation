@@ -57,7 +57,6 @@ global{
 		
 		// Create roads of the bus route from the roads matrix
 		loop row from: 1 to: roads.rows - 2 { // Iterate through rows, stopping at the second to last row
-		//write "\nProcessing row: " + row;
 			float lon1 <- roads[2, row]; // Longitude for the current row
 			float lat1 <- roads[1, row]; // Latitude for the current row
 			float lon2 <- roads[2, row + 1]; // Longitude for the next row
@@ -192,8 +191,6 @@ global{
 	reflex check_bus_creation {
 		if (next_bus_index < 2) { // create 2 buses - 1 for each route
 			string current_time <- string(current_date, "HH:mm:ss");
-			//string next_start_time <- bus35_start_times at next_bus_index;
-			//write "Next start time: " + next_start_time;
 			
 			//Bus 1
 			if (next_bus_index = 0) {
@@ -290,7 +287,7 @@ species road {
 
 species bus skills: [moving] {
 	point coordinate;
-	path path_following; //<- list(the_graph) as_path the_graph;
+	path path_following; 
 	string trip_id;
 	list<string> stop_departure_times;
 	list<string> stop_arrival_times;
@@ -299,12 +296,9 @@ species bus skills: [moving] {
 	reflex myfollow {
 		int bus_stop <- 0;
 		loop i from: 0 to: length(stops) - 1 { // Each route point within the route (makes up the road)
-			float speed_to_next_stop <- bus_speeds at bus_stop * 0.53; // Save speed of bus depending on arrival stop
-			//write "\nCURRENT STOP: " + bus_stop;
+			float speed_to_next_stop <- bus_speeds at bus_stop * 0.32; // Save speed of bus depending on arrival stop
 			if string(current_date, " HH:mm:ss") >= " " + stop_departure_times at bus_stop { // If clock passes bus stop time
 				bus_stop <- bus_stop + 1; // Incremenet bus stop number
-				//write "\nLooping stop: " + bus_stop + " @ " + stop_departure_times at bus_stop;
-				//write "Current speed for this segment: " + speed_to_next_stop + " m/s";
 				if (bus_stop >= length(stop_arrival_times)) { // When bus stop reaches last stop, die
                     write "\nTrip ended for Bus ID: " + self + " at " + string(current_date, "HH:mm:ss");
                     do die;
@@ -314,11 +308,10 @@ species bus skills: [moving] {
 			do follow path: path_following speed: speed_to_next_stop; // follow the path with given speed for current bus stop
 			
 		} 
-		//do follow path: path_following;
 	}
 
 	aspect base {
-		draw rectangle(0.0005, 0.001) color: #blue border: #black; // Draw the bus
+		draw rectangle(0.0010, 0.004) color: #blue border: #black; // Draw the bus
 		loop seg over: path_following.edges {
 			draw seg color: color;
 		}
@@ -374,9 +367,9 @@ experiment main type: gui {
 	float minimum_cycle_duration <- 0.001;
 	output {
 		display myView type: 3d {
+			species bus aspect: base;
 			species road aspect: base;
 			species stop aspect: base;
-			species bus aspect: base;
 			species clock aspect: default;
 		}
 
