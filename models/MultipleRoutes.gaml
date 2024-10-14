@@ -1,5 +1,5 @@
 /**
-* Name: CleanerRetrievalFromFiles
+* Name: MultipleRoutes
 * Reading and writing data from our gtfs files for multiple routes whilst using the same files to store data for all routes stops, stop times, etc ...
  
 * Author: jonat
@@ -7,7 +7,7 @@
 */
 
 
-model CleanerRetrievalFromFiles
+model MultipleRoutes
 
 global{
 	//Files
