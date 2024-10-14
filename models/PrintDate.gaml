@@ -1,10 +1,8 @@
 /**
 * Name: PrintTime
-* Based on the internal empty template. 
-* Author: rocco
-* Tags: 
+* Clock model to display day of the week and time during the simulation.
 */
-model PrintTime
+model PrintDate
 
 global {
 		date starting_date <- date([2024, 8, 12, 0, 0, 0]);

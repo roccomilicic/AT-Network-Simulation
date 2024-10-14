@@ -1,3 +1,5 @@
+NOTE: For a better reading experience, visit this link: https://github.com/roccomilicic/AT-Network-Simulation
+
 # Auckland Transport Digital Twin Project
 ## Introduction
 This project contains a series of models designed to create a digital twin of Auckland's transport network. The goal is to visualize the simulation in a way that accurately reflects real-world conditions and data. This project was developed for Kenneth Johnson, a lecturer at AUT, who is interested in researching smart cities, specifically Auckland as a smart city.
