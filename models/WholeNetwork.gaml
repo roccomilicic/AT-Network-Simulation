@@ -1,6 +1,6 @@
 /**
-* Name: CleanerRetrievalFromFiles
-* Reading and writing data from our gtfs files for multiple routes whilst using the same files to store data for all routes stops, stop times, etc ...
+* Name: WholeNetwork
+* 
  
 * Author: jonat
 * Tags: 
@@ -11,7 +11,6 @@ model WholeNetwork
 
 global{
 	//Files
-	file bounds <- shape_file("../includes/Route_38_Stops.shp");
 	file stops_csv <- csv_file("../includes/stops_all.csv", ",");
 	file roads_csv <- csv_file("../includes/shapes_all.csv", ",");
 	file routes_csv <- csv_file("../includes/routes.csv");
@@ -87,7 +86,7 @@ global{
 					point next_coordinate <- point({lon_next, lat_next});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
 				}
-				/* 
+				
 				else {
 					shape_id <- shape_id_next;
 					
@@ -107,8 +106,8 @@ global{
 					// Location for the next stop to put the beginning of the road on the map
 					point next_coordinate <- point({lon_next, lat_next});
 					point next_location <- point(to_GAMA_CRS(next_coordinate));
-					
-				}*/
+				
+				}
 
 				// Link the 2 stops together
 				//next_road_link <- line(next_location, next_location);
@@ -179,6 +178,7 @@ global{
 		}
 	
 	}
+	//Bus creation
 	reflex check_bus_creation {
 		if (next_bus_index < length(bus_start_times)) { // Ensure we don't go out of bounds
 			string current_time <- string(current_date, "HH:mm:ss");

@@ -33,7 +33,7 @@ global{
 	
 	
 	
-	// Route matrixes for CSV route_38_roads
+	// matrix from files
 	matrix roads <- matrix(roads_csv);
 	matrix stops <- matrix(stops_csv);
 	matrix routes <- matrix(routes_csv);
@@ -42,7 +42,6 @@ global{
 	matrix trips_matrix <- matrix(all_bus_trips);
 	matrix route_38_trip_matrix <- matrix(route_38_trips);
 	matrix route_35_trip_matrix <- matrix(route_35_trips);
-	//string first_departure_time <- route_38_trip_matrix[2, 0];
 	
 	list<string> bus38_start_times <- [];
 	list<string> bus35_start_times <- [];
@@ -52,11 +51,11 @@ global{
 		create clock {
 			current_date <- starting_date;
 			}
-		
+		//creates a stop agent for every line in the csv file
 		create stop from: stops_csv with: [stop_id::string(get("stop_id")), stop_name::string(get("stop_name")), lon::float(get("stop_lon")), lat::float(get("stop_lat"))];
 		
 		
-		// Create roads of the bus route from the CSV file route_38_roads
+		// Create roads of the bus route from the roads matrix
 		loop row from: 1 to: roads.rows - 2 { // Iterate through rows, stopping at the second to last row
 		//write "\nProcessing row: " + row;
 			float lon1 <- roads[2, row]; // Longitude for the current row
@@ -94,7 +93,6 @@ global{
 				}
 				
 				else {
-					//shape_id <- shape_id_next;
 					
 					road_shape_id <- shape_id;
 					
@@ -115,13 +113,12 @@ global{
 					
 				}
 
-				// Link the 2 stops together
-				//next_road_link <- line(next_location, next_location);
+			
 			}
 		
 		}
 		
-		//the_graph <- as_edge_graph(road); // Create graph for all road points
+		
 		write routes[3, 0];
 		write routes[3, 1];
 		//loops through routes file
@@ -153,7 +150,7 @@ global{
 					trip_row <- trip_row + 1;
 				}
 			}
-			
+			//finds the first road with the matching shape_id and creates a graph in the graph list for it
 			loop agt over: road {
 				
 				if(agt.road_shape_id = route_shape_id)
@@ -176,11 +173,13 @@ global{
 		write "first road in graph 1";
 		write first(graphs at 1);
 		
+		//sets route 38 bus start times
 		loop i from: 0 to: route_38_trip_matrix.rows - 1 {
 			if (route_38_trip_matrix[10, i] = "True") {
 				add route_38_trip_matrix[2, i] to: bus38_start_times;
 			}
 		}
+		//sets route 35 bus start times
 		loop i from: 0 to: route_35_trip_matrix.rows - 1 {
 			if (route_35_trip_matrix[10, i] = "True") {
 				add route_35_trip_matrix[2, i] to: bus35_start_times;
@@ -189,11 +188,14 @@ global{
 	}
 	
 	
+	//creates a bus for each route
 	reflex check_bus_creation {
 		if (next_bus_index < 2) { // create 2 buses - 1 for each route
 			string current_time <- string(current_date, "HH:mm:ss");
 			//string next_start_time <- bus35_start_times at next_bus_index;
 			//write "Next start time: " + next_start_time;
+			
+			//Bus 1
 			if (next_bus_index = 0) {
 				create bus {
 					float starting_lon <- roads[2, 1];
@@ -216,6 +218,7 @@ global{
 				// Move to the next bus in the list
 				next_bus_index <- next_bus_index + 1;
 			}
+			//Bus 2
 			else if(next_bus_index = 1) {
 				create bus {
 					float starting_lon <- roads[2, 3969];
